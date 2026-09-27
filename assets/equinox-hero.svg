@@ -1,0 +1,129 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 420" width="1280" height="420" role="img" aria-label="Equinox animated banner">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#F7F8FC"/>
+      <stop offset="1" stop-color="#E9EAFB"/>
+    </linearGradient>
+    <linearGradient id="indigo" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="#5B5CE2"/>
+      <stop offset="1" stop-color="#8B8DF0"/>
+    </linearGradient>
+    <linearGradient id="shimmer" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#5B5CE2"/>
+      <stop offset="0.5" stop-color="#B9BBFF"/>
+      <stop offset="1" stop-color="#5B5CE2"/>
+      <animateTransform attributeName="gradientTransform" type="translate" values="-1 0; 1 0; -1 0" dur="5s" repeatCount="indefinite"/>
+    </linearGradient>
+    <pattern id="dots" width="26" height="26" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="2" fill="#D8D9F5"/>
+    </pattern>
+    <clipPath id="tickerClip"><rect x="60" y="336" width="1160" height="52" rx="26"/></clipPath>
+    <clipPath id="phoneClip"><rect x="880" y="36" width="330" height="348" rx="36"/></clipPath>
+  </defs>
+
+  <rect x="0" y="0" width="1280" height="420" rx="32" fill="url(#bg)"/>
+  <rect x="0" y="0" width="1280" height="420" rx="32" fill="url(#dots)" opacity="0.45"/>
+
+  <!-- ===== Left: wordmark + headline ===== -->
+  <text x="70" y="92" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="bold" letter-spacing="10" fill="#5B5CE2">EQUINOX</text>
+  <text x="66" y="168" font-family="Arial, Helvetica, sans-serif" font-size="64" font-weight="bold" fill="#17181C">Scan. Remember.</text>
+  <text x="66" y="232" font-family="Arial, Helvetica, sans-serif" font-size="64" font-weight="bold" fill="url(#shimmer)">Save.</text>
+  <path d="M70 248 H 330" stroke="#5B5CE2" stroke-width="6" stroke-linecap="round" stroke-dasharray="260" stroke-dashoffset="260">
+    <animate attributeName="stroke-dashoffset" values="260; 0; 0; 260" dur="6s" repeatCount="indefinite"/>
+  </path>
+  <text x="70" y="288" font-family="Arial, Helvetica, sans-serif" font-size="22" fill="#70727A">Private UPI expense intelligence. 100% on-device.</text>
+
+  <!-- live stats -->
+  <g font-family="Arial, Helvetica, sans-serif">
+    <rect x="70" y="300" width="150" height="20" rx="10" fill="#FFFFFF" opacity="0.9"/>
+    <circle cx="86" cy="310" r="5" fill="#20B26B">
+      <animate attributeName="opacity" values="1; 0.25; 1" dur="1.8s" repeatCount="indefinite"/>
+    </circle>
+    <text x="98" y="317" font-size="14" fill="#17181C">₹24,860 tracked</text>
+    <rect x="232" y="300" width="150" height="20" rx="10" fill="#FFFFFF" opacity="0.9"/>
+    <circle cx="248" cy="310" r="5" fill="#5B5CE2">
+      <animate attributeName="opacity" values="1; 0.25; 1" dur="1.8s" begin="0.6s" repeatCount="indefinite"/>
+    </circle>
+    <text x="260" y="317" font-size="14" fill="#17181C">71.6% saved</text>
+  </g>
+
+  <!-- ===== Ticker strip ===== -->
+  <g clip-path="url(#tickerClip)">
+    <rect x="60" y="336" width="1160" height="52" rx="26" fill="#17181C" opacity="0.92"/>
+    <g font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#FFFFFF">
+      <animateTransform attributeName="transform" type="translate" from="0 0" to="-640 0" dur="14s" repeatCount="indefinite"/>
+      <text x="90" y="369">FOOD ₹3,240  •  PETROL ₹2,000  •  PERSONAL ₹1,280  •  COLLEGE ₹940  •  HOME ₹960  •  FOOD ₹3,240  •  PETROL ₹2,000  •  PERSONAL ₹1,280  •  COLLEGE ₹940  •  HOME ₹960  •</text>
+    </g>
+  </g>
+
+  <!-- ===== Right: phone ===== -->
+  <g clip-path="url(#phoneClip)">
+    <rect x="880" y="36" width="330" height="348" rx="36" fill="#FFFFFF" stroke="#E3E4F2" stroke-width="2"/>
+    <text x="906" y="72" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="bold" letter-spacing="3" fill="#70727A">EQUINOX</text>
+    <text x="906" y="112" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="bold" fill="#17181C">₹8,420</text>
+    <text x="906" y="132" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#70727A">THIS MONTH</text>
+
+    <!-- scan frame + laser -->
+    <g>
+      <rect x="906" y="150" width="120" height="120" rx="16" fill="#F7F8FC" stroke="#5B5CE2" stroke-width="2" stroke-dasharray="10 6"/>
+      <rect x="912" y="150" width="108" height="5" rx="2.5" fill="#5B5CE2" opacity="0.85">
+        <animateTransform attributeName="transform" type="translate" values="0 4; 0 106; 0 4" dur="3s" repeatCount="indefinite"/>
+      </rect>
+      <text x="906" y="288" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#70727A">Scan a UPI QR…</text>
+    </g>
+
+    <!-- weekly bars -->
+    <g>
+      <rect x="1052" y="250" width="14" height="20" rx="4" fill="url(#indigo)" opacity="0.35">
+        <animate attributeName="height" values="8; 34; 8" dur="2.8s" repeatCount="indefinite"/>
+        <animate attributeName="y" values="262; 236; 262" dur="2.8s" repeatCount="indefinite"/>
+      </rect>
+      <rect x="1072" y="250" width="14" height="20" rx="4" fill="url(#indigo)" opacity="0.35">
+        <animate attributeName="height" values="8; 48; 8" dur="2.8s" begin="0.2s" repeatCount="indefinite"/>
+        <animate attributeName="y" values="262; 222; 262" dur="2.8s" begin="0.2s" repeatCount="indefinite"/>
+      </rect>
+      <rect x="1092" y="250" width="14" height="20" rx="4" fill="url(#indigo)" opacity="0.35">
+        <animate attributeName="height" values="8; 40; 8" dur="2.8s" begin="0.4s" repeatCount="indefinite"/>
+        <animate attributeName="y" values="262; 230; 262" dur="2.8s" begin="0.4s" repeatCount="indefinite"/>
+      </rect>
+      <rect x="1112" y="250" width="14" height="20" rx="4" fill="url(#indigo)" opacity="0.35">
+        <animate attributeName="height" values="8; 56; 8" dur="2.8s" begin="0.6s" repeatCount="indefinite"/>
+        <animate attributeName="y" values="262; 214; 262" dur="2.8s" begin="0.6s" repeatCount="indefinite"/>
+      </rect>
+      <rect x="1132" y="250" width="14" height="20" rx="4" fill="url(#indigo)">
+        <animate attributeName="height" values="8; 66; 8" dur="2.8s" begin="0.8s" repeatCount="indefinite"/>
+        <animate attributeName="y" values="262; 204; 262" dur="2.8s" begin="0.8s" repeatCount="indefinite"/>
+      </rect>
+      <text x="1052" y="288" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#70727A">M T W T F S S</text>
+    </g>
+
+    <!-- savings ring 71.6% -->
+    <g transform="translate(1140, 190)">
+      <circle r="34" fill="none" stroke="#ECECFB" stroke-width="10"/>
+      <circle r="34" fill="none" stroke="#20B26B" stroke-width="10" stroke-linecap="round"
+              stroke-dasharray="213.6" stroke-dashoffset="213.6" transform="rotate(-90)">
+        <animate attributeName="stroke-dashoffset" values="213.6; 60.7; 60.7; 213.6" dur="6s" repeatCount="indefinite"/>
+      </circle>
+      <text y="7" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="19" font-weight="bold" fill="#17181C">72%</text>
+    </g>
+  </g>
+
+  <!-- floating coins -->
+  <g font-family="Arial, Helvetica, sans-serif" font-weight="bold" text-anchor="middle">
+    <g>
+      <circle cx="660" cy="120" r="24" fill="#FFFFFF" stroke="#5B5CE2" stroke-width="2"/>
+      <text x="660" y="129" font-size="24" fill="#5B5CE2">₹</text>
+      <animateTransform attributeName="transform" type="translate" values="0 0; 0 -14; 0 0" dur="3.4s" repeatCount="indefinite"/>
+    </g>
+    <g>
+      <circle cx="730" cy="220" r="17" fill="#FFFFFF" stroke="#20B26B" stroke-width="2"/>
+      <text x="730" y="227" font-size="17" fill="#20B26B">₹</text>
+      <animateTransform attributeName="transform" type="translate" values="0 0; 0 12; 0 0" dur="4.1s" repeatCount="indefinite"/>
+    </g>
+    <g>
+      <circle cx="610" cy="250" r="13" fill="#FFFFFF" stroke="#F3A83B" stroke-width="2"/>
+      <text x="610" y="255" font-size="13" fill="#F3A83B">₹</text>
+      <animateTransform attributeName="transform" type="translate" values="0 0; 0 -10; 0 0" dur="2.7s" repeatCount="indefinite"/>
+    </g>
+  </g>
+</svg>
