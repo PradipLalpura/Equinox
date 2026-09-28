@@ -81,6 +81,6 @@ void main() {
     await navTap(t, Icons.person_outline);
     await t.pumpAndSettle();
     expect(find.text('Data management'), findsOneWidget);
-    expect(find.text('1.0.0+1'), findsOneWidget);
+    expect(find.text('1.0.1+2'), findsOneWidget);
   });
 }

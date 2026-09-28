@@ -3,6 +3,19 @@
 Concise record of meaningful changes. Phases tracked in `docs/PHASES.md`.
 Categories: Added · Changed · Fixed · Improved · Technical.
 
+## [v1.0.1] — 2026-09-28
+
+### Fixed
+- UPI app discovery is now live (`queryIntentActivities`): every upi://-capable
+  app on the phone appears and is guaranteed launchable. Kills wrong
+  package-name guesses for super.money / POP UPI.
+- Added BHIM (`in.org.npci.upiapp`) to the payment app list.
+- Outgoing `tr` sanitized (alphanumeric, ≤35) and generated when missing —
+  reused/malformed refs are a common PSP decline reason. Sent URI stored per
+  attempt for forensics (JSON export).
+- Release artifacts (signed): `release/Equinox-v1.0.1-release.apk` (75.6 MB),
+  `release/Equinox-v1.0.1-arm64.apk` (27.4 MB).
+
 ## [v1.0.0] — 2026-09-28 (all 6 phases complete)
 
 ### Added

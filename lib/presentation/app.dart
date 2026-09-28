@@ -737,7 +737,7 @@ class ProfileScreen extends ConsumerWidget {
             child: ListTile(
               leading: Icon(Icons.info_outline),
               title: Text('App version'),
-              subtitle: Text('1.0.0+1'),
+              subtitle: Text('1.0.1+2'),
             ),
           ),
         ],

@@ -75,11 +75,53 @@ void main() {
     }
   });
 
-  test('five app configs, GPay/PhonePe/Paytm packages stable', () {
-    expect(upiApps.length, 5);
+  test('six app configs incl BHIM', () {
+    expect(upiApps.length, 6);
     expect(
       upiApps.map((a) => a.name),
-      containsAll(['super.money', 'POP UPI', 'Google Pay', 'PhonePe', 'Paytm']),
+      containsAll([
+        'super.money',
+        'POP UPI',
+        'Google Pay',
+        'PhonePe',
+        'Paytm',
+        'BHIM',
+      ]),
     );
+  });
+
+  test('mergeApps: curated order, live flags, unknown apps appended', () {
+    final merged = mergeApps([
+      (package: 'com.phonepe.app', label: 'PhonePe'),
+      (package: 'com.unknown.upi', label: 'Mystery UPI'),
+    ]);
+    expect(merged.length, 7); // 6 curated + 1 extra
+    expect(
+      merged.map((e) => e.app.name).take(6),
+      ['super.money', 'POP UPI', 'Google Pay', 'PhonePe', 'Paytm', 'BHIM'],
+    );
+    expect(merged[3].installed, isTrue); // PhonePe found
+    expect(merged[0].installed, isFalse); // super.money absent
+    expect(merged.last.app.name, 'Mystery UPI');
+    expect(merged.last.installed, isTrue);
+    expect(mergeApps(const []), hasLength(6));
+    expect(mergeApps(const []).every((e) => !e.installed), isTrue);
+  });
+
+  test('sanitizeTr keeps compliant refs, fixes the rest', () {
+    expect(UpiPayload.sanitizeTr('REF123'), 'REF123');
+    expect(UpiPayload.sanitizeTr('AB-12/xy z'), 'AB12xyz');
+    expect(UpiPayload.sanitizeTr('x' * 40).length, 35);
+    expect(
+      UpiPayload.sanitizeTr(null),
+      matches(RegExp(r'^EQ[A-Z0-9]+$')),
+    );
+    expect(UpiPayload.sanitizeTr('---'), matches(RegExp(r'^EQ')));
+  });
+
+  test('toUri sends the sanitized tr, not the raw QR ref', () {
+    final p = UpiPayload.parse('upi://pay?pa=a@b&tr=BAD/REF!!');
+    final u = p.toUri(trOverride: UpiPayload.sanitizeTr(p.reference));
+    expect(u.queryParameters['tr'], 'BADREF');
   });
 }

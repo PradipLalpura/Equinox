@@ -30,7 +30,11 @@ void main() {
       category: Category.food,
       upiApp: 'Google Pay',
     );
-    final attemptId = await store.recordLaunch(txId: txId, app: 'Google Pay');
+    final attemptId = await store.recordLaunch(
+      txId: txId,
+      app: 'Google Pay',
+      sentUri: 'upi://pay?pa=shop@upi&am=99.00&tr=EQ123',
+    );
 
     final waiting = await store.awaitingReturn();
     expect(waiting.single.id, txId);
@@ -46,6 +50,7 @@ void main() {
     final attempts = await db.select(db.paymentAttempts).get();
     expect(attempts.single.returnedAt, isNotNull);
     expect(attempts.single.callbackStatus, 'successful');
+    expect(attempts.single.rawResponse, contains('upi://pay'));
   });
 
   test('illegal transitions throw, terminal states stick', () async {

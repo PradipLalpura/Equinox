@@ -151,7 +151,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
   final _desc = TextEditingController();
   final _amount = TextEditingController();
   Future<Fix?>? _fixFuture;
-  Future<Map<UpiApp, bool>>? _appsFuture;
+  Future<List<({UpiApp app, bool installed})>>? _appsFuture;
   UpiApp? _app;
   bool _paying = false;
 
@@ -159,14 +159,15 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
   void initState() {
     super.initState();
     _fixFuture = _captureWithRationale();
-    _appsFuture = upiLauncher.installedStates().then((m) {
-      for (final app in upiApps) {
-        if (m[app] == true) {
-          _app = app; // default: first installed, spec order
+    _appsFuture = upiLauncher.discover().then((d) {
+      final merged = mergeApps(d);
+      for (final e in merged) {
+        if (e.installed) {
+          _app = e.app; // default: first installed, curated order
           break;
         }
       }
-      return m;
+      return merged;
     });
   }
 
@@ -214,12 +215,13 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
   double? get _amountValue =>
       widget.payload.amount ?? double.tryParse(_amount.text.trim());
 
-  bool _canPay(Map<UpiApp, bool>? installed) =>
+  bool _canPay(List<({UpiApp app, bool installed})>? apps) =>
       !_paying &&
       _category != null &&
       (_amountValue ?? 0) > 0 &&
       _app != null &&
-      (installed?[_app] ?? false);
+      (apps?.any((e) => e.app.packageName == _app!.packageName && e.installed) ??
+          false);
 
   Future<void> _pay() async {
     final amount = _amountValue;
@@ -232,6 +234,12 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
     try {
       final fix = await _fixFuture;
       final desc = _desc.text.trim().isEmpty ? null : _desc.text.trim();
+      final sendTr = UpiPayload.sanitizeTr(widget.payload.reference);
+      final uri = widget.payload.toUri(
+        amountOverride: widget.payload.amount == null ? amount : null,
+        noteOverride: desc,
+        trOverride: sendTr,
+      );
       final txId = await txStore.createInitiated(
         payload: widget.payload,
         amount: amount,
@@ -239,12 +247,10 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
         description: desc,
         upiApp: app.name,
         fix: fix == null ? null : FixCoords(fix.lat, fix.lng, fix.accuracy),
+        reference: sendTr,
       );
-      final attemptId = await txStore.recordLaunch(txId: txId, app: app.name);
-      final uri = widget.payload.toUri(
-        amountOverride: widget.payload.amount == null ? amount : null,
-        noteOverride: desc,
-      );
+      final attemptId = await txStore.recordLaunch(
+          txId: txId, app: app.name, sentUri: uri.toString());
       final installed = await upiLauncher.isInstalled(app.packageName);
       try {
         await upiLauncher.launch(
@@ -370,11 +376,11 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
             },
           ),
           const SizedBox(height: 8),
-          FutureBuilder<Map<UpiApp, bool>>(
+          FutureBuilder<List<({UpiApp app, bool installed})>>(
             future: _appsFuture,
             builder: (context, snap) {
-              final installed = snap.data;
-              if (installed == null) {
+              final apps = snap.data;
+              if (apps == null) {
                 return const Card(
                   child: Padding(
                     padding: EdgeInsets.all(20),
@@ -382,7 +388,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                   ),
                 );
               }
-              final anyInstalled = installed.values.any((v) => v);
+              final anyInstalled = apps.any((e) => e.installed);
               return Card(
                 child: Padding(
                   padding: const EdgeInsets.all(20),
@@ -406,17 +412,17 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            for (final app in upiApps)
+                            for (final e in apps)
                               RadioListTile<UpiApp>(
-                                value: app,
-                                enabled: installed[app] == true,
-                                title: Text(app.name),
+                                value: e.app,
+                                enabled: e.installed,
+                                title: Text(e.app.name),
                                 secondary: Icon(
-                                  app.icon,
+                                  e.app.icon,
                                   color: const Color(0xFF5B5CE2),
                                 ),
                                 subtitle: Text(
-                                  installed[app] == true
+                                  e.installed
                                       ? '✓ Installed'
                                       : 'Not installed',
                                 ),
@@ -431,7 +437,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                           label: _paying
                               ? 'OPENING…'
                               : 'PAY ${inr(_amountValue ?? 0)}',
-                          onPressed: _canPay(installed) ? _pay : null,
+                          onPressed: _canPay(apps) ? _pay : null,
                         ),
                       ),
                     ],

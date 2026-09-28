@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 
 import '../models.dart';
@@ -73,7 +75,9 @@ class UpiPayload {
   }
 
   /// UPI collect URL for the external app. Only non-null params included.
-  Uri toUri({double? amountOverride, String? noteOverride}) {
+  /// Pass [trOverride] at pay time: the tr actually sent must be unique and
+  /// spec-shaped (see sanitizeTr), while [reference] keeps the QR original.
+  Uri toUri({double? amountOverride, String? noteOverride, String? trOverride}) {
     final amt = amountOverride ?? amount;
     final nt = noteOverride ?? note;
     final params = <String, String>{
@@ -81,11 +85,28 @@ class UpiPayload {
       'pn': ?payeeName,
       'am': ?amt?.toStringAsFixed(2),
       'cu': currency,
-      'tr': ?reference,
+      'tr': ?(trOverride ?? reference),
       'tn': ?nt,
       'mc': ?merchantCode,
     };
     return Uri(scheme: 'upi', host: 'pay', queryParameters: params);
+  }
+
+  /// UPI `tr`: alphanumeric, max 35 chars, unique per payment. QR refs are
+  /// passed through verbatim when already compliant; otherwise sanitized, and
+  /// generated when missing — some PSPs decline reused/malformed refs.
+  static String sanitizeTr(String? tr) {
+    final clean = (tr ?? '').replaceAll(RegExp(r'[^A-Za-z0-9]'), '');
+    if (clean.isEmpty) return generateTr();
+    return clean.length <= 35 ? clean : clean.substring(0, 35);
+  }
+
+  static String generateTr() {
+    final t =
+        DateTime.now().millisecondsSinceEpoch.toRadixString(36).toUpperCase();
+    final r =
+        Random().nextInt(36 * 36).toRadixString(36).toUpperCase().padLeft(2, '0');
+    return 'EQ$t$r';
   }
 }
 
@@ -111,7 +132,28 @@ const upiApps = <UpiApp>[
   ),
   UpiApp('PhonePe', 'com.phonepe.app', Icons.account_balance_wallet_outlined),
   UpiApp('Paytm', 'net.one97.paytm', Icons.payments_outlined),
+  UpiApp('BHIM', 'in.org.npci.upiapp', Icons.account_balance_outlined),
 ];
+
+/// Merges the curated list with live device discovery. Curated order first
+/// (installed flag from discovery), then any other upi://-capable app the
+/// phone actually has — no package-name guessing, nothing stale.
+List<({UpiApp app, bool installed})> mergeApps(
+    List<({String package, String label})> discovered) {
+  final found = {for (final d in discovered) d.package: d.label};
+  final out = <({UpiApp app, bool installed})>[
+    for (final app in upiApps)
+      (app: app, installed: found.containsKey(app.packageName)),
+  ];
+  for (final d in discovered) {
+    if (upiApps.any((a) => a.packageName == d.package)) continue;
+    out.add((
+      app: UpiApp(d.label, d.package, Icons.apps_outlined),
+      installed: true,
+    ));
+  }
+  return out;
+}
 
 // Status machine (§23). Terminal states have no exits; NOTHING auto-moves
 // initiated/pending/unknown → successful — only explicit user reconcile does.

@@ -53,6 +53,7 @@ class TxStore {
     String? description,
     String? upiApp,
     FixCoords? fix,
+    String? reference,
   }) async {
     final id = const Uuid().v4();
     final now = DateTime.now();
@@ -70,7 +71,7 @@ class TxStore {
             merchantName: Value(payload.payeeName ?? payload.vpa),
             merchantVpa: Value(payload.vpa),
             merchantCode: Value(payload.merchantCode),
-            transactionReference: Value(payload.reference),
+            transactionReference: Value(reference ?? payload.reference),
             transactionNote: Value(description ?? payload.note),
             qrRawData: Value(payload.raw),
             upiApp: Value(upiApp),
@@ -86,6 +87,7 @@ class TxStore {
   Future<String> recordLaunch({
     required String txId,
     required String app,
+    String? sentUri,
   }) async {
     final id = const Uuid().v4();
     await db
@@ -95,6 +97,7 @@ class TxStore {
             id: id,
             transactionId: txId,
             upiApp: app,
+            rawResponse: Value(sentUri),
           ),
         );
     return id;

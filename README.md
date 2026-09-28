@@ -140,7 +140,7 @@ lib/
   platform/         # QR · location · UPI intents (Phase 3+)
 test/               # spending_test · db_test (real SQLite) · widget_test
 docs/               # PHASES.md · CHANGELOG.md
-release/            # Equinox-v1.0.0-release.apk · Equinox-v1.0.0-arm64.apk (local, gitignored)
+release/            # Equinox-v1.0.1-release.apk · Equinox-v1.0.1-arm64.apk (local, gitignored)
 ```
 
 ## 🔒 Privacy & safety
@@ -156,8 +156,8 @@ Grab the APK from the [**Releases page**](https://github.com/PradipLalpura/Equin
 
 | File | Size | For |
 |---|---|---|
-| `Equinox-v1.0.0-arm64.apk` | ~27 MB | ✅ Modern phones (ARM64) — **download this one** |
-| `Equinox-v1.0.0-release.apk` | ~76 MB | Universal fallback (all architectures) |
+| `Equinox-v1.0.1-arm64.apk` | ~27 MB | ✅ Modern phones (ARM64) — **download this one** |
+| `Equinox-v1.0.1-release.apk` | ~76 MB | Universal fallback (all architectures) |
 
 Verify integrity with the SHA-256 checksums published on the release. Signed with the project's release key — Android will warn the app is from an unknown developer; that's expected for direct APK installs.
 

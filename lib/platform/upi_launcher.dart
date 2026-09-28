@@ -34,6 +34,25 @@ class UpiLauncher {
     return out;
   }
 
+  /// Every upi://-capable app on the phone, via PackageManager. Anything
+  /// returned here is guaranteed launchable — merge with [mergeApps].
+  Future<List<({String package, String label})>> discover() async {
+    try {
+      final res = await _channel.invokeMethod<List>('getUpiApps');
+      if (res == null) return const [];
+      return [
+        for (final m in res)
+          if (m is Map)
+            (
+              package: '${m['package']}',
+              label: '${m['label'] ?? m['package']}',
+            ),
+      ];
+    } on PlatformException {
+      return const [];
+    }
+  }
+
   /// Launches [upiUri]. When [package] is confirmed installed the intent
   /// targets it exactly; otherwise (or when null) Android shows a chooser.
   /// Throws only if NOTHING on the device handles upi:// — UI catches that.
