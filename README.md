@@ -11,6 +11,7 @@
   <img src="https://img.shields.io/badge/Android-first-3DDC84?logo=android&logoColor=white" alt="Android" />
   <img src="https://img.shields.io/badge/cloud-zero-20B26B" alt="Zero cloud" />
   <img src="https://img.shields.io/badge/tests-57%2F57_%2B_integration-20B26B" alt="Tests" />
+  <img src="https://img.shields.io/badge/license-MIT-70727A" alt="MIT license" />
 </p>
 
 <h3 align="center">Scan your payment. Remember every detail.<br/>Understand your spending. Build your savings. Keep it yours.</h3>
@@ -117,7 +118,8 @@ flutter run
 
 # verify
 flutter analyze        # clean
-flutter test           # 16/16
+flutter test           # 57/57 unit
+flutter test integration_test  # on-device flow (needs an emulator/device)
 
 # release APKs for your phone
 flutter build apk --release                 # build/app/outputs/flutter-apk/app-release.apk
@@ -146,7 +148,30 @@ release/            # Equinox-v1.0.0-release.apk · Equinox-v1.0.0-arm64.apk (lo
 - ✈️ Fully offline — every feature works with radios off.
 - 📍 Location captured **once per transaction**, never tracked. Denied permission → `"Location unavailable"`, flow continues.
 - 🚫 Never touches UPI PINs, bank passwords, or OTPs. Never auto-marks success. Never silently pays.
-- 💾 No cloud backup — encrypted local settings, checksummed JSON export + restore, explicit delete-all.
+- 💾 No cloud backup — encrypted local settings, JSON export + validated restore, explicit delete-all.
+
+## 📥 Download
+
+Grab the APK from the [**Releases page**](https://github.com/PradipLalpura/Equinox/releases) and install it directly on your phone (allow "install unknown apps" once):
+
+| File | Size | For |
+|---|---|---|
+| `Equinox-v1.0.0-arm64.apk` | ~27 MB | ✅ Modern phones (ARM64) — **download this one** |
+| `Equinox-v1.0.0-release.apk` | ~76 MB | Universal fallback (all architectures) |
+
+Verify integrity with the SHA-256 checksums published on the release. Signed with the project's release key — Android will warn the app is from an unknown developer; that's expected for direct APK installs.
+
+> Maintainers: APKs are built via `flutter build apk --release[--split-per-abi]`, never committed to git (see `.gitignore`). Attach them to the GitHub Release along with checksums: `Get-FileHash Equinox-v1.0.0-arm64.apk -Algorithm SHA256`.
+
+## 🤝 Contributing
+
+1. Read `docs/PHASES.md` — it is the source of truth; `docs/CHANGELOG.md` records every meaningful change.
+2. One rule that matters: **no cloud, ever.** No backend, auth, sync, analytics SDK, or network call carrying user data. PRs adding any will be closed.
+3. Keep it lazy: fewest files, shortest diff, stdlib first. `flutter analyze` must be clean and `flutter test` green.
+
+## 📄 License
+
+MIT — see [LICENSE](LICENSE). Do what you want; keep the notice.
 
 ---
 
