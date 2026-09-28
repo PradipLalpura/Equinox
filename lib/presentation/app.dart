@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../application/providers.dart';
 import '../core/format/inr.dart';
 import '../core/widgets/ui.dart';
+import '../data/tx_store.dart';
 import '../domain/models.dart';
+import 'pay.dart';
 
 // Phase 1 shell: onboarding → 5-tab nav (Home/History/Scan/Analytics/Profile).
 // Scan/Analytics/Profile are honest placeholders until Phases 3–4.
@@ -41,11 +43,73 @@ class OnboardingScreen extends ConsumerWidget {
       );
 }
 
-class NavShell extends ConsumerWidget {
+class NavShell extends ConsumerStatefulWidget {
   const NavShell({super.key});
-  static const tabs = [HomeScreen(), HistoryScreen(), ScanPlaceholder(), AnalyticsPlaceholder(), ProfileScreen()];
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<NavShell> createState() => _NavShellState();
+}
+
+class _NavShellState extends ConsumerState<NavShell>
+    with WidgetsBindingObserver {
+  static const tabs = [
+    HomeScreen(),
+    HistoryScreen(),
+    ScanScreen(),
+    AnalyticsPlaceholder(),
+    ProfileScreen()
+  ];
+  bool _reconciling = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _maybeReconcile();
+  }
+
+  /// External UPI apps return no result (§22): on return, ask explicitly.
+  Future<void> _maybeReconcile() async {
+    if (_reconciling || !mounted) return;
+    final pending = ref.read(awaitingReturnProvider);
+    if (pending == null) return;
+    Tx? match;
+    for (final t in await txStore.awaitingReturn()) {
+      if (t.id == pending.txId) {
+        match = t;
+        break;
+      }
+    }
+    if (match == null) {
+      ref.read(awaitingReturnProvider.notifier).state = null;
+      return;
+    }
+    _reconciling = true;
+    if (mounted) {
+      await showModalBottomSheet(
+        context: context,
+        builder: (_) => ReconcileSheet(
+          txId: match!.id,
+          attemptId: pending.attemptId,
+          merchant: match.merchant,
+          amount: match.amount,
+        ),
+      );
+    }
+    _reconciling = false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final i = ref.watch(navIndexProvider);
     return Scaffold(
       body: tabs[i],
@@ -60,7 +124,6 @@ class NavShell extends ConsumerWidget {
           NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'PROFILE'),
         ],
       ),
-      floatingActionButton: i == 2 ? null : null,
     );
   }
 }
@@ -74,7 +137,7 @@ class HomeScreen extends ConsumerWidget {
     final week = ref.watch(weekSpendingProvider);
     final saved = ref.watch(savedMonthProvider);
     final target = ref.watch(savingsTargetProvider);
-    final txs = ref.watch(txListProvider);
+    final txs = ref.watch(txListProvider).valueOrNull ?? const <Tx>[];
     final now = TimeOfDay.now().hour;
     final greet = now < 12 ? 'Good morning' : now < 17 ? 'Good afternoon' : 'Good evening';
     return SafeArea(
@@ -149,7 +212,11 @@ class HistoryScreen extends ConsumerWidget {
     final groups = ref.watch(groupedTxProvider);
     final cat = ref.watch(categoryFilterProvider);
     final date = ref.watch(dateFilterProvider);
-    if (ref.watch(txListProvider).isEmpty) {
+    final loading = ref.watch(txListProvider).isLoading;
+    if (loading) {
+      return const SafeArea(child: LoadingState());
+    }
+    if (ref.watch(txListProvider).valueOrNull?.isEmpty ?? true) {
       return SafeArea(child: Center(child: EmptyState(
         title: 'Your spending story starts here.',
         subtitle: 'Scan your first payment QR to automatically record an expense.',
@@ -234,23 +301,11 @@ String _monthName(int m) => const [
       '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul',
       'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][m];
 
-class ScanPlaceholder extends ConsumerWidget {
-  const ScanPlaceholder({super.key});
-  @override
-  Widget build(BuildContext context, WidgetRef ref) => SafeArea(
-        child: Center(child: EmptyState(
-          title: 'Scan a UPI QR',
-          subtitle: 'Point your camera at the payment QR. Full scanner lands in Phase 3.',
-          cta: 'OPEN SCANNER (PHASE 3)',
-          onCta: () {})),
-      );
-}
-
 class AnalyticsPlaceholder extends ConsumerWidget {
   const AnalyticsPlaceholder({super.key});
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final txs = ref.watch(txListProvider);
+    final txs = ref.watch(txListProvider).valueOrNull ?? const <Tx>[];
     return SafeArea(child: ListView(padding: const EdgeInsets.all(16), children: [
       Text('ANALYTICS', style: Theme.of(context).textTheme.headlineMedium),
       const SizedBox(height: 8),

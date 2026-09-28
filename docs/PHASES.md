@@ -107,7 +107,15 @@ seed + user data; docs updated.
 
 ---
 
-## Phase 3 — QR → UPI Payment Flow `[ ]`
+## Phase 3 — QR → UPI Payment Flow `[x]`
+
+> Completed 2026-09-27. Verified: `flutter analyze` clean, `flutter test` 26/26
+> pass (parser + status-machine + store + DAO + widget), release APKs rebuilt
+> (incl. native PackageManager channel). Providers now stream Drift via TxStore
+> (seeded once, Phase 1–2 numbers unchanged). device_apps dropped (discontinued)
+> for a ~20-line MethodChannel. POP UPI/super.money packages are best-effort
+> with generic-chooser fallback — verify in the on-device acceptance matrix
+> (needs a real phone + real UPI apps; emulator/camera-matrix is manual).
 
 **Objective:** One-tap Scan → Review → Pay → Reconcile → persisted locally (§14–23, §61).
 

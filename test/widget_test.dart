@@ -1,12 +1,20 @@
 // Phase 1 smoke tests: onboarding → nav shell renders offline.
+// StreamProvider overridden with seed: widget tests never touch real SQLite.
+import 'package:equinox/application/providers.dart';
+import 'package:equinox/domain/models.dart';
 import 'package:equinox/main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+ProviderScope testApp() => ProviderScope(
+      overrides: [txListProvider.overrideWith((_) => Stream.value(seedTx))],
+      child: const EquinoxRoot(),
+    );
+
 void main() {
   testWidgets('onboarding shows, GET STARTED opens dashboard', (t) async {
-    await t.pumpWidget(const ProviderScope(child: EquinoxRoot()));
+    await t.pumpWidget(testApp());
     expect(find.text('Your payments.\nRemembered.'), findsOneWidget);
     await t.tap(find.text('GET STARTED'));
     await t.pumpAndSettle();
@@ -15,7 +23,7 @@ void main() {
   });
 
   testWidgets('bottom nav switches tabs', (t) async {
-    await t.pumpWidget(const ProviderScope(child: EquinoxRoot()));
+    await t.pumpWidget(testApp());
     await t.tap(find.text('GET STARTED'));
     await t.pumpAndSettle();
     await t.tap(find.byIcon(Icons.receipt_long_outlined));
@@ -24,7 +32,7 @@ void main() {
   });
 
   testWidgets('history search narrows results', (t) async {
-    await t.pumpWidget(const ProviderScope(child: EquinoxRoot()));
+    await t.pumpWidget(testApp());
     await t.tap(find.text('GET STARTED'));
     await t.pumpAndSettle();
     await t.tap(find.byIcon(Icons.receipt_long_outlined));
@@ -36,7 +44,7 @@ void main() {
   });
 
   testWidgets('category chip filters history', (t) async {
-    await t.pumpWidget(const ProviderScope(child: EquinoxRoot()));
+    await t.pumpWidget(testApp());
     await t.tap(find.text('GET STARTED'));
     await t.pumpAndSettle();
     await t.tap(find.byIcon(Icons.receipt_long_outlined));
@@ -48,7 +56,7 @@ void main() {
   });
 
   testWidgets('tapping a transaction opens detail sheet', (t) async {
-    await t.pumpWidget(const ProviderScope(child: EquinoxRoot()));
+    await t.pumpWidget(testApp());
     await t.tap(find.text('GET STARTED'));
     await t.pumpAndSettle();
     await t.tap(find.byIcon(Icons.receipt_long_outlined));

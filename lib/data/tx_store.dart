@@ -1,0 +1,151 @@
+import 'package:drift/drift.dart';
+import 'package:uuid/uuid.dart';
+import '../domain/models.dart';
+import '../domain/upi/upi.dart';
+import 'db/app_db.dart';
+
+// Write path for user transactions (Phase 3). One seam: UI talks to
+// TxStore, never to Drift directly. Reads stay reactive via watchAll().
+// ponytail: global lazy singletons, no DI framework — one app, one DB.
+class TxStore {
+  final AppDb db;
+  TxStore(this.db);
+
+  Stream<List<Tx>> watchAll() => (db.select(db.transactions)
+        ..orderBy([(t) => OrderingTerm.desc(t.paymentTimestamp)]))
+      .watch()
+      .map((rows) => rows.map(_toTx).toList());
+
+  Future<List<Tx>> awaitingReturn() async {
+    final rows = await (db.select(db.transactions)
+          ..where((t) => t.paymentStatus.equals(PayStatus.initiated.name))
+          ..orderBy([(t) => OrderingTerm.desc(t.paymentTimestamp)])
+          ..limit(1))
+        .get();
+    return rows.map(_toTx).toList();
+  }
+
+  Tx _toTx(Transaction r) => Tx(
+        id: r.id,
+        amount: r.amount,
+        category: CategoryX.fromName(r.category),
+        merchant: r.merchantName.isEmpty
+            ? (r.merchantVpa ?? 'Unknown merchant')
+            : r.merchantName,
+        description: r.description,
+        status: PayStatusX.fromName(r.paymentStatus),
+        time: r.paymentTimestamp,
+        upiId: r.merchantVpa,
+        upiApp: r.upiApp,
+        locationLabel: r.locationLabel,
+        reference: r.transactionReference,
+      );
+
+  /// Persists the payment as INITIATED *before* leaving Equinox (§23).
+  Future<String> createInitiated({
+    required UpiPayload payload,
+    required double amount,
+    required Category category,
+    String? description,
+    String? upiApp,
+    FixCoords? fix,
+  }) async {
+    final id = const Uuid().v4();
+    final now = DateTime.now();
+    await db.into(db.transactions).insert(TransactionsCompanion.insert(
+          id: id,
+          amount: amount,
+          category: category.name,
+          paymentTimestamp: now,
+          paymentStatus: const Value('initiated'),
+          currency: const Value('INR'),
+          description: Value(description),
+          merchantName: Value(payload.payeeName ?? payload.vpa),
+          merchantVpa: Value(payload.vpa),
+          merchantCode: Value(payload.merchantCode),
+          transactionReference: Value(payload.reference),
+          transactionNote: Value(description ?? payload.note),
+          qrRawData: Value(payload.raw),
+          upiApp: Value(upiApp),
+          timezone: Value(now.timeZoneName),
+          latitude: Value(fix?.lat),
+          longitude: Value(fix?.lng),
+          locationAccuracy: Value(fix?.accuracy),
+        ));
+    return id;
+  }
+
+  Future<String> recordLaunch({required String txId, required String app}) async {
+    final id = const Uuid().v4();
+    await db.into(db.paymentAttempts).insert(
+        PaymentAttemptsCompanion.insert(
+            id: id, transactionId: txId, upiApp: app));
+    return id;
+  }
+
+  /// Explicit user reconcile — the ONLY path out of initiated/pending/unknown.
+  Future<void> reconcile({
+    required String txId,
+    required String attemptId,
+    required PayStatus to,
+  }) async {
+    final row = await (db.select(db.transactions)
+          ..where((t) => t.id.equals(txId)))
+        .getSingle();
+    final from = PayStatusX.fromName(row.paymentStatus);
+    if (!canTransition(from, to)) {
+      throw StateError('Illegal transition ${from.name} → ${to.name}');
+    }
+    final now = DateTime.now();
+    await db.transaction(() async {
+      await (db.update(db.transactions)..where((t) => t.id.equals(txId)))
+          .write(TransactionsCompanion(
+              paymentStatus: Value(to.name), updatedAt: Value(now)));
+      await (db.update(db.paymentAttempts)..where((t) => t.id.equals(attemptId)))
+          .write(PaymentAttemptsCompanion(
+              returnedAt: Value(now), callbackStatus: Value(to.name)));
+    });
+  }
+
+  /// First-run seed so Phase 1–2 numbers survive the DB swap unchanged.
+  Future<void> seedOnce() async {
+    final n = await db.customSelect('SELECT COUNT(*) AS c FROM transactions').getSingle();
+    if ((n.data['c'] as int) > 0) return;
+    final now = DateTime.now();
+    for (final t in seedTx) {
+      await db.into(db.transactions).insert(TransactionsCompanion.insert(
+            id: t.id,
+            amount: t.amount,
+            category: t.category.name,
+            paymentTimestamp: t.time,
+            paymentStatus: Value(t.status.name),
+            description: Value(t.description),
+            merchantName: Value(t.merchant),
+            merchantVpa: Value(t.upiId),
+            upiApp: Value(t.upiApp),
+            locationLabel: Value(t.locationLabel),
+            transactionReference: Value(t.reference),
+            timezone: Value(now.timeZoneName),
+          ));
+    }
+    for (final s in seedSavings) {
+      await db.into(db.savings).insert(SavingsCompanion.insert(
+            id: s.id,
+            amount: s.amount,
+            savingDate: s.date,
+            description: Value(s.description),
+          ));
+    }
+  }
+}
+
+/// Minimal coords carrier so the store doesn't import geolocator.
+class FixCoords {
+  final double lat, lng, accuracy;
+  const FixCoords(this.lat, this.lng, this.accuracy);
+}
+
+AppDb? _db;
+AppDb get appDb => _db ??= AppDb();
+TxStore? _store;
+TxStore get txStore => _store ??= TxStore(appDb);

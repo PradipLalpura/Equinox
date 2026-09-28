@@ -16,8 +16,15 @@ Categories: Added · Changed · Fixed · Improved · Technical.
   TransactionRow, CategorySelector, SavingsProgress, SpendingCard), onboarding +
   5-tab nav shell, Android manifest (camera/location permissions, UPI package
   queries), widget smoke tests (2/2 pass).
-- Release artifacts: `release/Equinox-v1.0.0-release.apk` (53.5 MB),
-  `release/Equinox-v1.0.0-arm64.apk` (18.6 MB).
+- Release artifacts: `release/Equinox-v1.0.0-release.apk` (71.8 MB),
+  `release/Equinox-v1.0.0-arm64.apk` (26.2 MB).
+- Phase 3 — QR → UPI flow: `UpiPayload` parser (VPA/amount/currency/ref/note/
+  merchant code, strict validation), status machine (explicit reconcile only),
+  5-app configs, native `PackageManager` installed detection (MethodChannel,
+  no discontinued dep), package-targeted launch w/ chooser fallback
+  (android_intent_plus), single-shot location w/ graceful null, TxStore
+  (seed-once, INITIATED-before-launch, attempts, guarded reconcile),
+  Scan/Review/Reconcile UI, resume-triggered reconcile sheet. Tests: 26/26.
 - Phase 2 — Dashboard & Spending: §58-calibrated seed (26 txs + 2 savings),
   Tx detail fields (UPI ID, app, location, reference), history search
   (merchant/UPI ID/note/reference/category) + category & date filters

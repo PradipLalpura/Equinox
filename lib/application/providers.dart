@@ -1,11 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../data/tx_store.dart';
 import '../domain/models.dart';
 
-// Phase 2 state. Providers still read seed directly: no write path exists
-// until Phase 3, so routing read-only seed rows through async Drift DAOs
-// would add complexity with zero user-visible benefit.
-// ponytail: swap txListProvider body for DAO reads when Phase 3 writes land;
-// widget call sites stay unchanged. DAO SQL itself is proven by db_test.dart.
+// Phase 3: reads flow from Drift via TxStore (seeded once on first launch).
+// Widgets use `.valueOrNull ?? const []` (+ LoadingState while waiting).
 
 // --- Spending math (confirmed = SUCCESSFUL only, §53) ---
 
@@ -55,7 +53,7 @@ List<double> weeklyBuckets(List<Tx> txs, DateTime now) {
 enum DateFilter { all, today, week, month, custom }
 
 /// Custom range as (start, end) record. Single-shot state, cleared on chip change.
-final txListProvider = Provider<List<Tx>>((_) => seedTx);
+final txListProvider = StreamProvider<List<Tx>>((_) => txStore.watchAll());
 final savingsListProvider = Provider<List<SavingEntry>>((_) => seedSavings);
 final savingsTargetProvider = Provider<double>((_) => 5000);
 
@@ -92,8 +90,10 @@ List<Tx> filterTx(List<Tx> txs, DateTime now,
     ..sort((a, b) => b.time.compareTo(a.time));
 }
 
+List<Tx> _txs(Ref ref) => ref.watch(txListProvider).valueOrNull ?? const [];
+
 final filteredTxProvider = Provider<List<Tx>>((ref) => filterTx(
-      ref.watch(txListProvider), DateTime.now(),
+      _txs(ref), DateTime.now(),
       query: ref.watch(searchQueryProvider),
       category: ref.watch(categoryFilterProvider),
       date: ref.watch(dateFilterProvider),
@@ -113,17 +113,22 @@ final groupedTxProvider = Provider<List<MapEntry<DateTime, List<Tx>>>>((ref) {
 // --- Dashboard sums (real clock) ---
 
 final totalSpendingProvider =
-    Provider<double>((ref) => confirmed(ref.watch(txListProvider)));
+    Provider<double>((ref) => confirmed(_txs(ref)));
 final monthSpendingProvider = Provider<double>((ref) {
   final now = DateTime.now();
-  return confirmed(ref.watch(txListProvider), from: monthStart(now), to: monthEnd(now));
+  return confirmed(_txs(ref), from: monthStart(now), to: monthEnd(now));
 });
 final weekSpendingProvider = Provider<double>((ref) {
   final now = DateTime.now();
-  return confirmed(ref.watch(txListProvider), from: weekStart(now), to: weekEnd(now));
+  return confirmed(_txs(ref), from: weekStart(now), to: weekEnd(now));
 });
 final savedMonthProvider = Provider<double>(
     (ref) => ref.watch(savingsListProvider).fold(0, (a, s) => a + s.amount));
 
 final onboardingDoneProvider = StateProvider<bool>((_) => false);
 final navIndexProvider = StateProvider<int>((_) => 0);
+
+/// Tx + attempt awaiting post-UPI-app reconcile. In-memory only: a process
+/// death before return is recovered by the Phase 6 pending inbox.
+final awaitingReturnProvider =
+    StateProvider<({String txId, String attemptId})?>((_) => null);
