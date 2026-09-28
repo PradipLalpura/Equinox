@@ -62,6 +62,29 @@ class SavingEntry {
   const SavingEntry({required this.id, required this.amount, this.goalId, this.description, required this.date});
 }
 
+enum GoalStatus { active, paused, completed }
+
+extension GoalStatusX on GoalStatus {
+  static GoalStatus fromName(String n) =>
+      GoalStatus.values.firstWhere((s) => s.name == n, orElse: () => GoalStatus.active);
+}
+
+/// Optional savings target (§11). current grows ONLY via explicit
+/// contributions — never inferred (§10).
+class SavingGoal {
+  final String id;
+  final String name;
+  final double target;
+  final double current;
+  final DateTime? targetDate;
+  final GoalStatus status;
+  const SavingGoal({required this.id, required this.name, required this.target,
+    this.current = 0, this.targetDate, this.status = GoalStatus.active});
+
+  double get progress => target <= 0 ? 0 : (current / target).clamp(0.0, 1.0);
+  double get remaining => (target - current).clamp(0, double.infinity);
+}
+
 // Seed calibrated to §58: total ₹24,860 · Sept ₹8,420 (Food 3,240 / Petrol
 // 2,000 / Personal 1,280 / College 940 / Home 960) · week Sep 21–27 ₹2,150.
 // Non-confirmed rows (pending/failed/cancelled) never count toward totals.

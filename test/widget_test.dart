@@ -1,6 +1,7 @@
 // Phase 1 smoke tests: onboarding → nav shell renders offline.
 // StreamProvider overridden with seed: widget tests never touch real SQLite.
 import 'package:equinox/application/providers.dart';
+import 'package:equinox/core/widgets/ui.dart';
 import 'package:equinox/domain/models.dart';
 import 'package:equinox/main.dart';
 import 'package:flutter/material.dart';
@@ -8,7 +9,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 ProviderScope testApp() => ProviderScope(
-      overrides: [txListProvider.overrideWith((_) => Stream.value(seedTx))],
+      overrides: [
+        txListProvider.overrideWith((_) => Stream.value(seedTx)),
+        savingsListProvider.overrideWith((_) => Stream.value(seedSavings)),
+        goalsProvider.overrideWith((_) => const Stream.empty()),
+        savingsTargetProvider.overrideWith((_) => Stream.value(5000)),
+      ],
       child: const EquinoxRoot(),
     );
 
@@ -65,5 +71,71 @@ void main() {
     await t.pumpAndSettle();
     expect(find.text('UPI ID'), findsOneWidget);
     expect(find.text('shreekrishna@upi'), findsOneWidget);
+  });
+
+  testWidgets('savings screen opens with month progress', (t) async {
+    await t.pumpWidget(testApp());
+    await t.tap(find.text('GET STARTED'));
+    await t.pumpAndSettle();
+    await t.tap(find.text('OPEN ›'));
+    await t.pumpAndSettle();
+    expect(
+        find.text(
+            'SAVED IN ${monthLabel(DateTime.now()).toUpperCase()}'),
+        findsOneWidget);
+    expect(find.text('ADD SAVINGS'), findsOneWidget);
+    expect(find.text('+ NEW GOAL'), findsOneWidget);
+  });
+
+  testWidgets('add sheet validates amount before save', (t) async {
+    await t.pumpWidget(testApp());
+    await t.tap(find.text('GET STARTED'));
+    await t.pumpAndSettle();
+    await t.tap(find.text('OPEN ›'));
+    await t.pumpAndSettle();
+    await t.tap(find.text('ADD SAVINGS'));
+    await t.pumpAndSettle();
+    expect(find.text('ADD SAVINGS', skipOffstage: false), findsWidgets);
+    await t.enterText(find.byType(TextField).first, 'abc');
+    await t.pump();
+    expect(t.widget<FilledButton>(find.widgetWithText(FilledButton, 'SAVE')).onPressed,
+        isNull);
+    await t.enterText(find.byType(TextField).first, '500');
+    await t.pump();
+    expect(t.widget<FilledButton>(find.widgetWithText(FilledButton, 'SAVE')).onPressed,
+        isNotNull);
+  });
+
+  testWidgets('month stepper crosses into previous month', (t) async {
+    await t.pumpWidget(testApp());
+    await t.tap(find.text('GET STARTED'));
+    await t.pumpAndSettle();
+    await t.tap(find.byIcon(Icons.bar_chart_outlined));
+    await t.pumpAndSettle();
+    final now = DateTime.now();
+    expect(find.text(monthLabel(now)), findsOneWidget);
+    await t.tap(find.byIcon(Icons.chevron_left));
+    await t.pumpAndSettle();
+    expect(
+        find.text(monthLabel(DateTime(now.year, now.month - 1))),
+        findsOneWidget);
+  });
+
+  testWidgets('chart tap selects the tapped day', (t) async {
+    await t.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: InteractiveChart(
+          buckets: const [1000, 0, 680, 0, 0, 0, 450],
+          counts: const [2, 0, 1, 0, 0, 0, 1],
+          monday: DateTime(2026, 9, 21),
+        ),
+      ),
+    ));
+    await t.pumpAndSettle();
+    final center = t.getCenter(find.byKey(const Key('week-chart')));
+    final size = t.getSize(find.byKey(const Key('week-chart')));
+    await t.tapAt(Offset(center.dx - size.width / 2 + 20, center.dy));
+    await t.pumpAndSettle();
+    expect(find.text('Mon 21 · ₹1,000 · 2 transactions'), findsOneWidget);
   });
 }

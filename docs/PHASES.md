@@ -158,7 +158,14 @@ updates; docs updated.
 
 ---
 
-## Phase 4 — Savings & Analytics `[ ]`
+## Phase 4 — Savings & Analytics `[x]`
+
+> Completed 2026-09-27. Verified: `flutter analyze` clean, `flutter test` 42/42
+> pass (savings math, store atomicity/validation, aggregation units, widget
+> flows incl. chart touch + month stepping), release APKs rebuilt. Savings and
+> spending share one DB but never mix: contributions are the sole writer of
+> goal progress; confirmed-spending queries ignore savings tables entirely.
+> Category drill-down reuses History via filter preset (no second list UI).
 
 **Objective:** Savings as first-class explicit contributions (§9–13) + analytics
 (§27–30).

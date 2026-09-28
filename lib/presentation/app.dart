@@ -6,6 +6,7 @@ import '../core/widgets/ui.dart';
 import '../data/tx_store.dart';
 import '../domain/models.dart';
 import 'pay.dart';
+import 'savings.dart';
 
 // Phase 1 shell: onboarding → 5-tab nav (Home/History/Scan/Analytics/Profile).
 // Scan/Analytics/Profile are honest placeholders until Phases 3–4.
@@ -55,7 +56,7 @@ class _NavShellState extends ConsumerState<NavShell>
     HomeScreen(),
     HistoryScreen(),
     ScanScreen(),
-    AnalyticsPlaceholder(),
+    AnalyticsScreen(),
     ProfileScreen()
   ];
   bool _reconciling = false;
@@ -136,7 +137,7 @@ class HomeScreen extends ConsumerWidget {
     final month = ref.watch(monthSpendingProvider);
     final week = ref.watch(weekSpendingProvider);
     final saved = ref.watch(savedMonthProvider);
-    final target = ref.watch(savingsTargetProvider);
+    final target = ref.watch(savingsTargetProvider).valueOrNull ?? 5000;
     final txs = ref.watch(txListProvider).valueOrNull ?? const <Tx>[];
     final now = TimeOfDay.now().hour;
     final greet = now < 12 ? 'Good morning' : now < 17 ? 'Good afternoon' : 'Good evening';
@@ -153,12 +154,20 @@ class HomeScreen extends ConsumerWidget {
           Expanded(child: SpendingCard(title: 'THIS WEEK', value: week)),
         ]),
         const SizedBox(height: 8),
-        Card(child: Padding(padding: const EdgeInsets.all(20),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('SAVINGS', style: Theme.of(context).textTheme.bodyMedium),
-            const SizedBox(height: 8),
-            SavingsProgress(saved: saved, target: target),
-          ]))),
+        GestureDetector(
+          onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const SavingsScreen())),
+          child: Card(child: Padding(padding: const EdgeInsets.all(20),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                Text('SAVINGS', style: Theme.of(context).textTheme.bodyMedium),
+                Text('OPEN ›', style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: const Color(0xFF5B5CE2), fontWeight: FontWeight.w700)),
+              ]),
+              const SizedBox(height: 8),
+              SavingsProgress(saved: saved, target: target),
+            ]))),
+        ),
         const SizedBox(height: 8),
         Card(child: Padding(padding: const EdgeInsets.all(20),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -301,43 +310,185 @@ String _monthName(int m) => const [
       '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul',
       'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][m];
 
-class AnalyticsPlaceholder extends ConsumerWidget {
-  const AnalyticsPlaceholder({super.key});
+class AnalyticsScreen extends ConsumerWidget {
+  const AnalyticsScreen({super.key});
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final month = ref.watch(selectedMonthProvider);
     final txs = ref.watch(txListProvider).valueOrNull ?? const <Tx>[];
-    return SafeArea(child: ListView(padding: const EdgeInsets.all(16), children: [
-      Text('ANALYTICS', style: Theme.of(context).textTheme.headlineMedium),
-      const SizedBox(height: 8),
-      SpendingCard(title: 'Total Spending', value: confirmed(txs)),
-      const SizedBox(height: 8),
-      SpendingCard(title: 'Transactions', value: txs.where((t) => t.status.isConfirmed).length),
-      const SizedBox(height: 8),
-      const Card(child: Padding(padding: EdgeInsets.all(20),
-        child: Text('Weekly chart, category drill-down and monthly view land in Phase 4.'))),
-    ]));
+    final savings =
+        ref.watch(savingsListProvider).valueOrNull ?? const [];
+    final target = ref.watch(savingsTargetProvider).valueOrNull ?? 5000;
+    final now = DateTime.now();
+    final from = monthStart(month);
+    final to = monthEnd(month);
+    final mTotal = confirmed(txs, from: from, to: to);
+    final count = confirmedCount(txs, from: from, to: to);
+    final big = largestTx(
+        txs.where((t) => !t.time.isBefore(from) && !t.time.isAfter(to)).toList());
+    final top = topCategory(txs, from: from, to: to);
+    final stats = categoryTotals(txs, from: from, to: to);
+    final mSaved = savedInMonth(savings, month);
+
+    void step(int delta) => ref.read(selectedMonthProvider.notifier).state =
+        DateTime(month.year, month.month + delta);
+
+    return SafeArea(
+      child: ListView(padding: const EdgeInsets.all(16), children: [
+        Text('ANALYTICS', style: Theme.of(context).textTheme.headlineMedium),
+        const SizedBox(height: 8),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  IconButton(
+                      icon: const Icon(Icons.chevron_left),
+                      onPressed: () => step(-1)),
+                  Text(monthLabel(month),
+                      style: Theme.of(context).textTheme.titleLarge),
+                  IconButton(
+                      icon: const Icon(Icons.chevron_right),
+                      onPressed: () => step(1)),
+                ]),
+          ),
+        ),
+        const SizedBox(height: 8),
+        GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: 8,
+          crossAxisSpacing: 8,
+          childAspectRatio: 1.6,
+          children: [
+            _stat(context, 'Spent', inr(mTotal)),
+            _stat(context, 'Transactions', '$count'),
+            _stat(context, 'Avg / day', inr(avgDaily(txs, month))),
+            _stat(context, 'Avg txn', inr(avgTx(txs, from: from, to: to))),
+            _stat(context, 'Largest',
+                big == null ? '—' : '${inr(big.amount)} · ${big.merchant}'),
+            _stat(context, 'Top category',
+                top == null ? '—' : '${top.key.label} · ${inr(top.value)}'),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('THIS WEEK',
+                      style: Theme.of(context).textTheme.bodyMedium),
+                  const SizedBox(height: 12),
+                  InteractiveChart(
+                    buckets: weeklyBuckets(txs, now),
+                    counts: weeklyCounts(txs, now),
+                    monday: weekStart(now),
+                  ),
+                ]),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('CATEGORIES · ${monthLabel(month)}',
+                      style: Theme.of(context).textTheme.bodyMedium),
+                  for (final e in stats.entries)
+                    if (e.value > 0)
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: Icon(e.key.icon,
+                            color: const Color(0xFF5B5CE2)),
+                        title: Text(e.key.label),
+                        subtitle: Text(
+                            '${txs.where((t) => t.category == e.key && t.status.isConfirmed && !t.time.isBefore(from) && !t.time.isAfter(to)).length} txns · ${pct(mTotal <= 0 ? 0 : e.value / mTotal)}'),
+                        trailing: Text(inr(e.value),
+                            style:
+                                const TextStyle(fontWeight: FontWeight.w700)),
+                        onTap: () {
+                          ref.read(categoryFilterProvider.notifier).state =
+                              e.key;
+                          ref
+                              .read(dateFilterProvider.notifier)
+                              .state = DateFilter.all;
+                          ref.read(navIndexProvider.notifier).state = 1;
+                        },
+                      ),
+                ]),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('SAVINGS · ${monthLabel(month)}',
+                      style: Theme.of(context).textTheme.bodyMedium),
+                  const SizedBox(height: 8),
+                  SavingsProgress(saved: mSaved, target: target),
+                ]),
+          ),
+        ),
+      ]),
+    );
   }
+
+  Widget _stat(BuildContext context, String title, String value) => Card(
+        margin: EdgeInsets.zero,
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(title, style: Theme.of(context).textTheme.bodyMedium),
+                const SizedBox(height: 2),
+                Text(value,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w700, fontSize: 17),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis),
+              ]),
+        ),
+      );
 }
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
   @override
-  Widget build(BuildContext context, WidgetRef ref) => SafeArea(
-        child: ListView(padding: const EdgeInsets.all(16), children: [
-          Text('PROFILE', style: Theme.of(context).textTheme.headlineMedium),
-          const SizedBox(height: 8),
-          const Card(child: ListTile(
-              leading: Icon(Icons.person_outline),
-              title: Text('Local profile'), subtitle: Text('No account · data stays on this phone'))),
-          const Card(child: ListTile(
-              leading: Icon(Icons.savings_outlined),
-              title: Text('Monthly savings target'), subtitle: Text('₹5,000'))),
-          const Card(child: ListTile(
-              leading: Icon(Icons.folder_outlined),
-              title: Text('Data management'),
-              subtitle: Text('Export / import / delete land in Phase 6 · Settings'))),
-          const Card(child: ListTile(
-              leading: Icon(Icons.info_outline), title: Text('App version'), subtitle: Text('1.0.0+1'))),
-        ]),
-      );
+  Widget build(BuildContext context, WidgetRef ref) {
+    final target = ref.watch(savingsTargetProvider).valueOrNull ?? 5000;
+    void openSavings() => Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const SavingsScreen()));
+    return SafeArea(
+      child: ListView(padding: const EdgeInsets.all(16), children: [
+        Text('PROFILE', style: Theme.of(context).textTheme.headlineMedium),
+        const SizedBox(height: 8),
+        const Card(child: ListTile(
+            leading: Icon(Icons.person_outline),
+            title: Text('Local profile'), subtitle: Text('No account · data stays on this phone'))),
+        Card(child: ListTile(
+            leading: const Icon(Icons.savings_outlined),
+            title: const Text('Savings & goals'),
+            subtitle: Text('Target ${inr(target)} · tap to manage'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: openSavings)),
+        const Card(child: ListTile(
+            leading: Icon(Icons.folder_outlined),
+            title: Text('Data management'),
+            subtitle: Text('Export / import / delete land in Phase 6 · Settings'))),
+        const Card(child: ListTile(
+            leading: Icon(Icons.info_outline), title: Text('App version'), subtitle: Text('1.0.0+1'))),
+      ]),
+    );
+  }
 }

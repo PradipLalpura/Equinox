@@ -16,8 +16,14 @@ Categories: Added · Changed · Fixed · Improved · Technical.
   TransactionRow, CategorySelector, SavingsProgress, SpendingCard), onboarding +
   5-tab nav shell, Android manifest (camera/location permissions, UPI package
   queries), widget smoke tests (2/2 pass).
-- Release artifacts: `release/Equinox-v1.0.0-release.apk` (71.8 MB),
-  `release/Equinox-v1.0.0-arm64.apk` (26.2 MB).
+- Release artifacts: `release/Equinox-v1.0.0-release.apk` (73.1 MB),
+  `release/Equinox-v1.0.0-arm64.apk` (26.7 MB).
+- Phase 4 — Savings & Analytics: reactive savings/goals/target streams,
+  AddSaving sheet (amount/goal/desc/date), goal CRUD + atomic contributions +
+  pause/complete/delete (history preserved as General), editable monthly
+  target, Savings screen (month progress, goals, history), Analytics screen
+  (month stepper across year boundaries, summary grid, touch weekly chart,
+  category drill-down into History, per-month savings). Tests: 42/42.
 - Phase 3 — QR → UPI flow: `UpiPayload` parser (VPA/amount/currency/ref/note/
   merchant code, strict validation), status machine (explicit reconcile only),
   5-app configs, native `PackageManager` installed detection (MethodChannel,

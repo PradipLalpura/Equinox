@@ -54,8 +54,11 @@ enum DateFilter { all, today, week, month, custom }
 
 /// Custom range as (start, end) record. Single-shot state, cleared on chip change.
 final txListProvider = StreamProvider<List<Tx>>((_) => txStore.watchAll());
-final savingsListProvider = Provider<List<SavingEntry>>((_) => seedSavings);
-final savingsTargetProvider = Provider<double>((_) => 5000);
+final savingsListProvider =
+    StreamProvider<List<SavingEntry>>((_) => txStore.watchSavings());
+final goalsProvider =
+    StreamProvider<List<SavingGoal>>((_) => txStore.watchGoals());
+final savingsTargetProvider = StreamProvider<double>((_) => txStore.watchTarget());
 
 final searchQueryProvider = StateProvider<String>((_) => '');
 final categoryFilterProvider = StateProvider<Category?>((_) => null);
@@ -122,8 +125,86 @@ final weekSpendingProvider = Provider<double>((ref) {
   final now = DateTime.now();
   return confirmed(_txs(ref), from: weekStart(now), to: weekEnd(now));
 });
-final savedMonthProvider = Provider<double>(
-    (ref) => ref.watch(savingsListProvider).fold(0, (a, s) => a + s.amount));
+final savedMonthProvider = Provider<double>((ref) {
+  final now = DateTime.now();
+  return savedInMonth(
+      ref.watch(savingsListProvider).valueOrNull ?? const [], now);
+});
+
+/// Explicit contributions in [month]'s calendar month (§10).
+double savedInMonth(List<SavingEntry> all, DateTime month) {
+  final from = monthStart(month);
+  final to = monthEnd(month);
+  return all
+      .where((s) => !s.date.isBefore(from) && !s.date.isAfter(to))
+      .fold(0.0, (a, s) => a + s.amount);
+}
+
+List<SavingEntry> savingsForGoal(List<SavingEntry> all, String goalId) =>
+    all.where((s) => s.goalId == goalId).toList();
+
+// --- Analytics (§27–30): pure aggregations over confirmed rows ---
+
+Tx? largestTx(List<Tx> txs) {
+  Tx? out;
+  for (final t in txs) {
+    if (!t.status.isConfirmed) continue;
+    if (out == null || t.amount > out.amount) out = t;
+  }
+  return out;
+}
+
+int confirmedCount(List<Tx> txs, {DateTime? from, DateTime? to}) =>
+    txs.where((t) => t.status.isConfirmed)
+        .where((t) => (from == null || !t.time.isBefore(from)) &&
+            (to == null || !t.time.isAfter(to)))
+        .length;
+
+double avgTx(List<Tx> txs, {DateTime? from, DateTime? to}) {
+  final n = confirmedCount(txs, from: from, to: to);
+  return n == 0 ? 0 : confirmed(txs, from: from, to: to) / n;
+}
+
+double avgDaily(List<Tx> txs, DateTime month) {
+  final days = monthEnd(month).day;
+  return confirmed(txs, from: monthStart(month), to: monthEnd(month)) / days;
+}
+
+MapEntry<Category, double>? topCategory(List<Tx> txs,
+    {DateTime? from, DateTime? to}) {
+  final totals = categoryTotals(txs, from: from, to: to);
+  MapEntry<Category, double>? best;
+  for (final e in totals.entries) {
+    if (best == null || e.value > best.value) best = e;
+  }
+  return (best != null && best.value > 0) ? best : null;
+}
+
+/// Per-day confirmed counts for Mon..Sun of [now]'s week (chart touch data).
+List<int> weeklyCounts(List<Tx> txs, DateTime now) {
+  final mon = weekStart(now);
+  final out = List.filled(7, 0);
+  for (final t in txs) {
+    if (!t.status.isConfirmed) continue;
+    final d =
+        DateTime(t.time.year, t.time.month, t.time.day).difference(mon).inDays;
+    if (d >= 0 && d < 7) out[d]++;
+  }
+  return out;
+}
+
+/// Month the analytics screen is showing (first-of-month). Steps across
+/// year boundaries correctly via DateTime normalization.
+final selectedMonthProvider = StateProvider<DateTime>((_) {
+  final n = DateTime.now();
+  return DateTime(n.year, n.month);
+});
+
+String monthLabel(DateTime m) => '${_monthFull(m.month)} ${m.year}';
+
+String _monthFull(int m) => const [
+      '', 'January', 'February', 'March', 'April', 'May', 'June', 'July',
+      'August', 'September', 'October', 'November', 'December'][m];
 
 final onboardingDoneProvider = StateProvider<bool>((_) => false);
 final navIndexProvider = StateProvider<int>((_) => 0);

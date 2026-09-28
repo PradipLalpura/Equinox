@@ -107,6 +107,151 @@ class TxStore {
     });
   }
 
+  // --- Savings (§9–13): explicit contributions only, never inferred ---
+
+  Stream<List<SavingEntry>> watchSavings() => (db.select(db.savings)
+        ..orderBy([(t) => OrderingTerm.desc(t.savingDate)]))
+      .watch()
+      .map((rows) => rows.map((r) => SavingEntry(
+          id: r.id, amount: r.amount, goalId: r.goalId,
+          description: r.description, date: r.savingDate)).toList());
+
+  Stream<List<SavingGoal>> watchGoals() => (db.select(db.savingsGoals)
+        ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
+      .watch()
+      .map((rows) => rows.map((r) => SavingGoal(
+          id: r.id, name: r.name, target: r.targetAmount,
+          current: r.currentAmount, targetDate: r.targetDate,
+          status: GoalStatusX.fromName(r.status))).toList());
+
+  Stream<double> watchTarget() => (db.select(db.appSettings)
+        ..where((t) => t.id.equals(1))
+        ..limit(1))
+      .watchSingleOrNull()
+      .map((r) => r?.monthlySavingsTarget ?? 5000);
+
+  Future<void> setTarget(double v) async {
+    if (v < 0) throw ArgumentError('target must be >= 0');
+    final existing = await (db.select(db.appSettings)
+          ..where((t) => t.id.equals(1)))
+        .getSingleOrNull();
+    if (existing == null) {
+      await db.into(db.appSettings).insert(
+          AppSettingsCompanion.insert(monthlySavingsTarget: Value(v)));
+    } else {
+      await (db.update(db.appSettings)..where((t) => t.id.equals(1)))
+          .write(AppSettingsCompanion(
+              monthlySavingsTarget: Value(v),
+              updatedAt: Value(DateTime.now())));
+    }
+  }
+
+  Future<String> addSaving({
+    required double amount,
+    String? goalId,
+    String? description,
+    DateTime? date,
+  }) async {
+    if (amount <= 0) throw ArgumentError('amount must be > 0');
+    final id = const Uuid().v4();
+    final now = DateTime.now();
+    await db.into(db.savings).insert(SavingsCompanion.insert(
+          id: id,
+          amount: amount,
+          savingDate: date ?? now,
+          goalId: Value(goalId),
+          description: Value(description),
+        ));
+    return id;
+  }
+
+  Future<String> addGoal({
+    required String name,
+    required double target,
+    DateTime? targetDate,
+  }) async {
+    final n = name.trim();
+    if (n.isEmpty) throw ArgumentError('name required');
+    if (target <= 0) throw ArgumentError('target must be > 0');
+    final id = const Uuid().v4();
+    await db.into(db.savingsGoals).insert(SavingsGoalsCompanion.insert(
+          id: id,
+          name: n,
+          targetAmount: target,
+          targetDate: Value(targetDate),
+        ));
+    return id;
+  }
+
+  Future<void> updateGoal({
+    required String id,
+    String? name,
+    double? target,
+    DateTime? targetDate,
+  }) async {
+    if (name != null && name.trim().isEmpty) {
+      throw ArgumentError('name required');
+    }
+    if (target != null && target <= 0) {
+      throw ArgumentError('target must be > 0');
+    }
+    await (db.update(db.savingsGoals)..where((t) => t.id.equals(id))).write(
+        SavingsGoalsCompanion(
+            name: name == null ? const Value.absent() : Value(name.trim()),
+            targetAmount:
+                target == null ? const Value.absent() : Value(target),
+            targetDate: Value(targetDate),
+            updatedAt: Value(DateTime.now())));
+  }
+
+  /// Contribution = savings row + goal bump, atomically. The ONLY writer of
+  /// currentAmount — it can never drift from explicit contributions.
+  Future<void> contribute({
+    required String goalId,
+    required double amount,
+    String? description,
+    DateTime? date,
+  }) async {
+    if (amount <= 0) throw ArgumentError('amount must be > 0');
+    final goal = await (db.select(db.savingsGoals)
+          ..where((t) => t.id.equals(goalId)))
+        .getSingleOrNull();
+    if (goal == null) throw StateError('goal not found');
+    if (goal.status != GoalStatus.active.name) {
+      throw StateError('goal is not active');
+    }
+    final now = DateTime.now();
+    await db.transaction(() async {
+      await db.into(db.savings).insert(SavingsCompanion.insert(
+            id: const Uuid().v4(),
+            amount: amount,
+            savingDate: date ?? now,
+            goalId: Value(goalId),
+            description: Value(description),
+          ));
+      await (db.update(db.savingsGoals)..where((t) => t.id.equals(goalId)))
+          .write(SavingsGoalsCompanion(
+              currentAmount: Value(goal.currentAmount + amount),
+              updatedAt: Value(now)));
+    });
+  }
+
+  Future<void> setGoalStatus(
+      {required String id, required GoalStatus status}) async {
+    await (db.update(db.savingsGoals)..where((t) => t.id.equals(id))).write(
+        SavingsGoalsCompanion(
+            status: Value(status.name), updatedAt: Value(DateTime.now())));
+  }
+
+  /// Delete keeps history: linked savings rows become General (goalId null).
+  Future<void> deleteGoal(String id) async {
+    await db.transaction(() async {
+      await (db.update(db.savings)..where((t) => t.goalId.equals(id)))
+          .write(const SavingsCompanion(goalId: Value(null)));
+      await (db.delete(db.savingsGoals)..where((t) => t.id.equals(id))).go();
+    });
+  }
+
   /// First-run seed so Phase 1–2 numbers survive the DB swap unchanged.
   Future<void> seedOnce() async {
     final n = await db.customSelect('SELECT COUNT(*) AS c FROM transactions').getSingle();

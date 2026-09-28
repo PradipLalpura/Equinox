@@ -199,7 +199,8 @@ class SpendingChart extends StatelessWidget {
 class _Bars extends CustomPainter {
   final List<double> buckets;
   final double max, t;
-  _Bars(this.buckets, this.max, this.t);
+  final int selected;
+  _Bars(this.buckets, this.max, this.t, [this.selected = -1]);
   @override
   void paint(Canvas canvas, Size size) {
     const days = 7;
@@ -210,16 +211,107 @@ class _Bars extends CustomPainter {
       final h = (buckets[i] / max) * (size.height - 28) * t;
       final x = i * slot + slot * 0.22;
       final w = slot * 0.56;
-      final today = DateTime.now().weekday - 1 == i;
+      final highlight = selected == -1
+          ? DateTime.now().weekday - 1 == i // static chart: today pops
+          : selected == i; // touch chart: selection pops
       canvas.drawRRect(
         RRect.fromRectAndRadius(
             Rect.fromLTWH(x, size.height - 24 - h, w, h), const Radius.circular(6)),
-        today ? paint : faint,
+        highlight ? paint : faint,
       );
     }
   }
   @override
-  bool shouldRepaint(covariant _Bars old) => old.t != t || old.buckets != buckets;
+  bool shouldRepaint(covariant _Bars old) =>
+      old.t != t || old.buckets != buckets || old.selected != selected;
+}
+
+/// Interactive 7-day chart (§29): tap a bar → day total + count.
+/// Phase 2's SpendingChart stays static; Phase 5 reuses this for reports.
+class InteractiveChart extends StatefulWidget {
+  final List<double> buckets;
+  final List<int> counts;
+  final DateTime monday;
+  const InteractiveChart(
+      {super.key,
+      required this.buckets,
+      required this.counts,
+      required this.monday});
+  @override
+  State<InteractiveChart> createState() => _InteractiveChartState();
+}
+
+class _InteractiveChartState extends State<InteractiveChart>
+    with SingleTickerProviderStateMixin {
+  late int _selected;
+  late final AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _selected = DateTime.now().weekday - 1;
+    _ctrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 600))
+      ..forward();
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final max = widget.buckets.fold<double>(0, (a, b) => a > b ? a : b);
+    final day = widget.monday.add(Duration(days: _selected));
+    return Column(children: [
+      GestureDetector(
+        key: const Key('week-chart'),
+        onTapDown: (d) {
+          final box = context.findRenderObject() as RenderBox?;
+          if (box == null) return;
+          final w = box.size.width;
+          final idx =
+              ((d.localPosition.dx - 0) / (w / 7)).floor().clamp(0, 6);
+          HapticFeedback.selectionClick();
+          setState(() => _selected = idx);
+        },
+        child: SizedBox(
+          height: 150,
+          child: AnimatedBuilder(
+            animation: _ctrl,
+            builder: (_, child) => CustomPaint(
+              painter: _Bars(widget.buckets, max <= 0 ? 1 : max,
+                  Curves.easeOut.transform(_ctrl.value), _selected),
+              child: child,
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                for (var i = 0; i < 7; i++)
+                  Expanded(
+                    child: Column(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Expanded(child: Container()),
+                          Text(['M', 'T', 'W', 'T', 'F', 'S', 'S'][i],
+                              style:
+                                  Theme.of(context).textTheme.bodyMedium),
+                        ]),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      const SizedBox(height: 8),
+      Text(
+        '${weekdayShort(day.weekday)} ${day.day} · ${inr(widget.buckets[_selected])} · ${widget.counts[_selected]} transactions',
+        style: Theme.of(context).textTheme.titleMedium,
+      ),
+    ]);
+  }
 }
 
 /// Full transaction detail (§24) as a bottom sheet: no nav stack needed.
