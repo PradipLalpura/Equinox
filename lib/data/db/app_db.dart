@@ -80,7 +80,8 @@ class MonthlyReports extends Table {
   RealColumn get totalSavings => real().withDefault(const Constant(0))();
   IntColumn get transactionCount => integer().withDefault(const Constant(0))();
   TextColumn get reportData => text().withDefault(const Constant('{}'))();
-  DateTimeColumn get generatedAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get generatedAt =>
+      dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
   @override
   Set<Column> get primaryKey => {id};
@@ -89,15 +90,27 @@ class MonthlyReports extends Table {
 class AppSettings extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get preferredUpiApp => text().nullable()();
-  RealColumn get monthlySavingsTarget => real().withDefault(const Constant(5000))();
-  BoolColumn get notificationsEnabled => boolean().withDefault(const Constant(false))();
-  BoolColumn get locationEnabled => boolean().withDefault(const Constant(true))();
+  RealColumn get monthlySavingsTarget =>
+      real().withDefault(const Constant(5000))();
+  BoolColumn get notificationsEnabled =>
+      boolean().withDefault(const Constant(false))();
+  BoolColumn get locationEnabled =>
+      boolean().withDefault(const Constant(true))();
   TextColumn get currency => text().withDefault(const Constant('INR'))();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 }
 
-@DriftDatabase(tables: [Transactions, PaymentAttempts, Savings, SavingsGoals, MonthlyReports, AppSettings])
+@DriftDatabase(
+  tables: [
+    Transactions,
+    PaymentAttempts,
+    Savings,
+    SavingsGoals,
+    MonthlyReports,
+    AppSettings,
+  ],
+)
 class AppDb extends _$AppDb {
   AppDb() : super(driftDatabase(name: 'equinox'));
   AppDb.forTesting(super.executor);
@@ -109,12 +122,24 @@ class AppDb extends _$AppDb {
     onCreate: (m) async {
       await m.createAll();
       // Indexes (§54). ponytail: raw SQL, one place, no extra DAO files yet.
-      await customStatement('CREATE INDEX IF NOT EXISTS idx_tx_time ON transactions (payment_timestamp)');
-      await customStatement('CREATE INDEX IF NOT EXISTS idx_tx_cat ON transactions (category)');
-      await customStatement('CREATE INDEX IF NOT EXISTS idx_tx_merchant ON transactions (merchant_name)');
-      await customStatement('CREATE INDEX IF NOT EXISTS idx_tx_status ON transactions (payment_status)');
-      await customStatement('CREATE INDEX IF NOT EXISTS idx_sav_date ON savings (saving_date)');
-      await customStatement('CREATE INDEX IF NOT EXISTS idx_rep_my ON monthly_reports (report_month, report_year)');
+      await customStatement(
+        'CREATE INDEX IF NOT EXISTS idx_tx_time ON transactions (payment_timestamp)',
+      );
+      await customStatement(
+        'CREATE INDEX IF NOT EXISTS idx_tx_cat ON transactions (category)',
+      );
+      await customStatement(
+        'CREATE INDEX IF NOT EXISTS idx_tx_merchant ON transactions (merchant_name)',
+      );
+      await customStatement(
+        'CREATE INDEX IF NOT EXISTS idx_tx_status ON transactions (payment_status)',
+      );
+      await customStatement(
+        'CREATE INDEX IF NOT EXISTS idx_sav_date ON savings (saving_date)',
+      );
+      await customStatement(
+        'CREATE INDEX IF NOT EXISTS idx_rep_my ON monthly_reports (report_month, report_year)',
+      );
     },
     onUpgrade: (m, from, to) async {
       // Safe forward migrations only; Phase 6 adds recovery paths.
@@ -128,47 +153,73 @@ class AppDb extends _$AppDb {
     final q = selectOnly(transactions)
       ..addColumns([sum])
       ..where(transactions.paymentStatus.equals('successful'));
-    if (from != null) q.where(transactions.paymentTimestamp.isBiggerOrEqualValue(from));
-    if (to != null) q.where(transactions.paymentTimestamp.isSmallerOrEqualValue(to));
+    if (from != null) {
+      q.where(transactions.paymentTimestamp.isBiggerOrEqualValue(from));
+    }
+    if (to != null) {
+      q.where(transactions.paymentTimestamp.isSmallerOrEqualValue(to));
+    }
     return (await q.getSingle()).read(sum) ?? 0;
   }
 
   // Phase 2 query surface (§25–28, §53–54). UI binds to these in Phase 3
   // once user-created rows exist; db_test.dart proves them against real SQLite.
-  Future<List<Transaction>> pagedTransactions(
-      {DateTime? from, DateTime? to, String? category, int limit = 50, int offset = 0}) {
+  Future<List<Transaction>> pagedTransactions({
+    DateTime? from,
+    DateTime? to,
+    String? category,
+    int limit = 50,
+    int offset = 0,
+  }) {
     final q = select(transactions)
       ..orderBy([(t) => OrderingTerm.desc(t.paymentTimestamp)])
       ..limit(limit, offset: offset);
-    if (from != null) q.where((t) => t.paymentTimestamp.isBiggerOrEqualValue(from));
-    if (to != null) q.where((t) => t.paymentTimestamp.isSmallerOrEqualValue(to));
-    if (category != null) q.where((t) => t.category.equals(category));
+    if (from != null) {
+      q.where((t) => t.paymentTimestamp.isBiggerOrEqualValue(from));
+    }
+    if (to != null) {
+      q.where((t) => t.paymentTimestamp.isSmallerOrEqualValue(to));
+    }
+    if (category != null) {
+      q.where((t) => t.category.equals(category));
+    }
     return q.get();
   }
 
   Future<List<Transaction>> searchTransactions(String query) {
     final like = '%$query%';
     return (select(transactions)
-          ..where((t) =>
-              t.merchantName.like(like) |
-              t.merchantVpa.like(like) |
-              t.description.like(like) |
-              t.transactionReference.like(like) |
-              t.category.like(like))
+          ..where(
+            (t) =>
+                t.merchantName.like(like) |
+                t.merchantVpa.like(like) |
+                t.description.like(like) |
+                t.transactionReference.like(like) |
+                t.category.like(like),
+          )
           ..orderBy([(t) => OrderingTerm.desc(t.paymentTimestamp)])
           ..limit(100))
         .get();
   }
 
-  Future<Map<String, double>> daoCategoryTotals({DateTime? from, DateTime? to}) async {
+  Future<Map<String, double>> daoCategoryTotals({
+    DateTime? from,
+    DateTime? to,
+  }) async {
     final sum = transactions.amount.sum();
     final q = selectOnly(transactions)
       ..addColumns([transactions.category, sum])
       ..where(transactions.paymentStatus.equals('successful'))
       ..groupBy([transactions.category]);
-    if (from != null) q.where(transactions.paymentTimestamp.isBiggerOrEqualValue(from));
-    if (to != null) q.where(transactions.paymentTimestamp.isSmallerOrEqualValue(to));
+    if (from != null) {
+      q.where(transactions.paymentTimestamp.isBiggerOrEqualValue(from));
+    }
+    if (to != null) {
+      q.where(transactions.paymentTimestamp.isSmallerOrEqualValue(to));
+    }
     final rows = await q.get();
-    return {for (final r in rows) r.read(transactions.category)!: r.read(sum) ?? 0};
+    return {
+      for (final r in rows) r.read(transactions.category)!: r.read(sum) ?? 0,
+    };
   }
 }

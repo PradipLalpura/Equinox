@@ -3,6 +3,23 @@
 Concise record of meaningful changes. Phases tracked in `docs/PHASES.md`.
 Categories: Added · Changed · Fixed · Improved · Technical.
 
+## [v1.0.0] — 2026-09-28 (all 6 phases complete)
+
+### Added
+- Phase 6 — Reliability, Backup & Final Polish: pending-review inbox (never
+  auto-resolves), CSV export, JSON backup + validated atomic restore, explicit
+  DELETE EVERYTHING, location rationale dialog, nav haptics, a11y tooltips,
+  release signing (`equinox` key, apksigner-verified), on-emulator integration
+  test (§62 flow minus camera leg) passing on real SQLite.
+- Release artifacts (signed): `release/Equinox-v1.0.0-release.apk` (75.6 MB),
+  `release/Equinox-v1.0.0-arm64.apk` (27.4 MB).
+
+### Fixed
+- Seed gate moved to secure-storage flag: DELETE ALL DATA stays deleted.
+- DAO/`db.delete` loops rewritten for drift typing; csv/file_picker/share_plus
+  migrated to current APIs (CsvEncoder, PlatformFile.readAsBytes,
+  SharePlus.instance).
+
 ## [Unreleased]
 
 ### Added

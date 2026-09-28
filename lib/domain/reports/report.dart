@@ -41,17 +41,32 @@ class MonthlyReport {
   final double prevTotal, prevSaved;
   final int prevCount;
   const MonthlyReport({
-    required this.year, required this.month, required this.total,
-    required this.count, required this.avg, required this.largest,
-    required this.categories, required this.daily, required this.weeks,
-    required this.largestN, required this.merchants, required this.saved,
-    required this.target, required this.prevTotal, required this.prevSaved,
+    required this.year,
+    required this.month,
+    required this.total,
+    required this.count,
+    required this.avg,
+    required this.largest,
+    required this.categories,
+    required this.daily,
+    required this.weeks,
+    required this.largestN,
+    required this.merchants,
+    required this.saved,
+    required this.target,
+    required this.prevTotal,
+    required this.prevSaved,
     required this.prevCount,
   });
 }
 
 MonthlyReport buildReport(
-    List<Tx> txs, List<SavingEntry> savings, double target, int year, int month) {
+  List<Tx> txs,
+  List<SavingEntry> savings,
+  double target,
+  int year,
+  int month,
+) {
   final from = DateTime(year, month);
   final to = DateTime(year, month + 1).subtract(const Duration(seconds: 1));
   bool inMonth(Tx t) =>
@@ -82,11 +97,17 @@ MonthlyReport buildReport(
   for (final t in rows) {
     (byMerchant[t.merchant] ??= []).add(t);
   }
-  final merchants = byMerchant.entries
-      .map((e) => MerchantStat(e.key,
-          e.value.fold(0.0, (a, t) => a + t.amount), e.value.length))
-      .toList()
-    ..sort((a, b) => b.total.compareTo(a.total));
+  final merchants =
+      byMerchant.entries
+          .map(
+            (e) => MerchantStat(
+              e.key,
+              e.value.fold(0.0, (a, t) => a + t.amount),
+              e.value.length,
+            ),
+          )
+          .toList()
+        ..sort((a, b) => b.total.compareTo(a.total));
 
   final prev = DateTime(year, month - 1);
   return MonthlyReport(
@@ -98,8 +119,12 @@ MonthlyReport buildReport(
     largest: rows.isEmpty ? null : rows.first,
     categories: [
       for (final c in Category.values)
-        CategorySlice(c, totals[c]!, counts[c]!,
-            total <= 0 ? 0 : totals[c]! / total),
+        CategorySlice(
+          c,
+          totals[c]!,
+          counts[c]!,
+          total <= 0 ? 0 : totals[c]! / total,
+        ),
     ],
     daily: daily,
     weeks: weeks,
@@ -107,22 +132,33 @@ MonthlyReport buildReport(
     merchants: merchants.take(5).toList(),
     saved: savedInMonth(savings, from),
     target: target,
-    prevTotal: confirmed(txs,
-        from: DateTime(prev.year, prev.month),
-        to: DateTime(prev.year, prev.month + 1)
-            .subtract(const Duration(seconds: 1))),
+    prevTotal: confirmed(
+      txs,
+      from: DateTime(prev.year, prev.month),
+      to: DateTime(
+        prev.year,
+        prev.month + 1,
+      ).subtract(const Duration(seconds: 1)),
+    ),
     prevSaved: savedInMonth(savings, prev),
-    prevCount: confirmedCount(txs,
-        from: DateTime(prev.year, prev.month),
-        to: DateTime(prev.year, prev.month + 1)
-            .subtract(const Duration(seconds: 1))),
+    prevCount: confirmedCount(
+      txs,
+      from: DateTime(prev.year, prev.month),
+      to: DateTime(
+        prev.year,
+        prev.month + 1,
+      ).subtract(const Duration(seconds: 1)),
+    ),
   );
 }
 
 /// Months that have any activity, newest first, plus the current month
 /// (LIVE) so the archive is complete without any generation step.
 List<DateTime> reportMonths(
-    List<Tx> txs, List<SavingEntry> savings, DateTime now) {
+  List<Tx> txs,
+  List<SavingEntry> savings,
+  DateTime now,
+) {
   final set = <String, DateTime>{};
   void add(DateTime d) =>
       set.putIfAbsent('${d.year}-${d.month}', () => DateTime(d.year, d.month));
@@ -133,7 +169,6 @@ List<DateTime> reportMonths(
     add(s.date);
   }
   add(DateTime(now.year, now.month));
-  final out = set.values.toList()
-    ..sort((a, b) => b.compareTo(a));
+  final out = set.values.toList()..sort((a, b) => b.compareTo(a));
   return out;
 }

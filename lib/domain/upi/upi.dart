@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../models.dart';
 
 // UPI domain: QR parsing (§15), app configs (§21–22), status machine (§23).
@@ -22,9 +23,16 @@ class UpiPayload {
   final String? note;
   final String? merchantCode;
   final String raw;
-  const UpiPayload({required this.vpa, this.payeeName, this.amount,
-    this.currency = 'INR', this.reference, this.note, this.merchantCode,
-    required this.raw});
+  const UpiPayload({
+    required this.vpa,
+    this.payeeName,
+    this.amount,
+    this.currency = 'INR',
+    this.reference,
+    this.note,
+    this.merchantCode,
+    required this.raw,
+  });
 
   static UpiPayload parse(String raw) {
     final text = raw.trim();
@@ -51,6 +59,7 @@ class UpiPayload {
       final v = q[key]?.trim();
       return (v == null || v.isEmpty) ? null : v;
     }
+
     return UpiPayload(
       vpa: pa,
       payeeName: opt('pn'),
@@ -95,7 +104,11 @@ class UpiApp {
 const upiApps = <UpiApp>[
   UpiApp('super.money', 'com.supermoney.app', Icons.bolt_outlined),
   UpiApp('POP UPI', 'com.pop.upi', Icons.local_offer_outlined),
-  UpiApp('Google Pay', 'com.google.android.apps.nbu.paisa.user', Icons.g_mobiledata),
+  UpiApp(
+    'Google Pay',
+    'com.google.android.apps.nbu.paisa.user',
+    Icons.g_mobiledata,
+  ),
   UpiApp('PhonePe', 'com.phonepe.app', Icons.account_balance_wallet_outlined),
   UpiApp('Paytm', 'net.one97.paytm', Icons.payments_outlined),
 ];
@@ -104,9 +117,25 @@ const upiApps = <UpiApp>[
 // initiated/pending/unknown → successful — only explicit user reconcile does.
 const allowedTransitions = <PayStatus, Set<PayStatus>>{
   PayStatus.draft: {PayStatus.initiated, PayStatus.cancelled},
-  PayStatus.initiated: {PayStatus.pending, PayStatus.successful, PayStatus.failed, PayStatus.cancelled, PayStatus.unknown},
-  PayStatus.pending: {PayStatus.successful, PayStatus.failed, PayStatus.cancelled, PayStatus.unknown},
-  PayStatus.unknown: {PayStatus.successful, PayStatus.failed, PayStatus.cancelled, PayStatus.pending},
+  PayStatus.initiated: {
+    PayStatus.pending,
+    PayStatus.successful,
+    PayStatus.failed,
+    PayStatus.cancelled,
+    PayStatus.unknown,
+  },
+  PayStatus.pending: {
+    PayStatus.successful,
+    PayStatus.failed,
+    PayStatus.cancelled,
+    PayStatus.unknown,
+  },
+  PayStatus.unknown: {
+    PayStatus.successful,
+    PayStatus.failed,
+    PayStatus.cancelled,
+    PayStatus.pending,
+  },
   PayStatus.successful: {},
   PayStatus.failed: {},
   PayStatus.cancelled: {},

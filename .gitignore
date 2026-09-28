@@ -1,6 +1,15 @@
 # Equinox: local-only artifacts, never committed
 /skills/
 /release/
+/android/*.jks
+/android/keystore.properties
+*.jks
+
+# Android build outputs (gitignored, regenerable)
+# (Flutter's stock ignore only covers android/app/*)
+/android/build/
+/android/.gradle/
+/android/app/build/
 
 # Miscellaneous
 *.class

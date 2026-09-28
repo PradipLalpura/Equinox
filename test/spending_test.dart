@@ -37,20 +37,42 @@ void main() {
   });
 
   test('filterTx searches merchant, UPI ID, note, reference, category', () {
-    expect(filterTx(seedTx, now, query: 'shell').length, greaterThanOrEqualTo(3));
+    expect(
+      filterTx(seedTx, now, query: 'shell').length,
+      greaterThanOrEqualTo(3),
+    );
     expect(filterTx(seedTx, now, query: 'shreekrishna@upi').length, 3);
-    expect(filterTx(seedTx, now, query: 'notebook').single.merchant, 'College Bookstore');
+    expect(
+      filterTx(seedTx, now, query: 'notebook').single.merchant,
+      'College Bookstore',
+    );
     expect(filterTx(seedTx, now, query: 'UPI-20260927-01').single.amount, 450);
-    expect(filterTx(seedTx, now, query: 'petrol').every((t) => t.category == Category.petrol), isTrue);
+    expect(
+      filterTx(
+        seedTx,
+        now,
+        query: 'petrol',
+      ).every((t) => t.category == Category.petrol),
+      isTrue,
+    );
   });
 
   test('filterTx date + category filters compose', () {
-    final septFood = filterTx(seedTx, now, category: Category.food, date: DateFilter.month);
+    final septFood = filterTx(
+      seedTx,
+      now,
+      category: Category.food,
+      date: DateFilter.month,
+    );
     expect(septFood.length, 6); // 5 successful + 1 pending (history shows both)
     final week = filterTx(seedTx, now, date: DateFilter.week);
     expect(week.length, 7); // 4 successful + pending + cancelled + failed
-    final custom = filterTx(seedTx, now,
-        date: DateFilter.custom, custom: (DateTime(2026, 8, 1), DateTime(2026, 8, 31, 23, 59)));
+    final custom = filterTx(
+      seedTx,
+      now,
+      date: DateFilter.custom,
+      custom: (DateTime(2026, 8, 1), DateTime(2026, 8, 31, 23, 59)),
+    );
     expect(custom.length, 8);
   });
 }

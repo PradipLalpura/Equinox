@@ -10,7 +10,7 @@
   <img src="https://img.shields.io/badge/Drift_%2F_SQLite-local-003B57?logo=sqlite&logoColor=white" alt="Drift SQLite" />
   <img src="https://img.shields.io/badge/Android-first-3DDC84?logo=android&logoColor=white" alt="Android" />
   <img src="https://img.shields.io/badge/cloud-zero-20B26B" alt="Zero cloud" />
-  <img src="https://img.shields.io/badge/tests-16%2F16_passing-20B26B" alt="Tests" />
+  <img src="https://img.shields.io/badge/tests-57%2F57_%2B_integration-20B26B" alt="Tests" />
 </p>
 
 <h3 align="center">Scan your payment. Remember every detail.<br/>Understand your spending. Build your savings. Keep it yours.</h3>
@@ -96,10 +96,10 @@ flowchart TB
 
 - [x] **Phase 1 — Foundation & Design System.** Scaffold, M3 theme, Drift schema (6 tables + indexes), nav shell, reusable widgets, seed.
 - [x] **Phase 2 — Dashboard & Spending.** Dashboard, search + filters + grouping, detail sheet, weekly bars, DAO surface + tests.
-- [ ] **Phase 3 — QR → UPI Payment Flow.** Scanner, UPI parsing, 5 categories, auto time/location, 5-app launcher, status machine, local persistence.
-- [ ] **Phase 4 — Savings & Analytics.** Targets, goals, weekly/monthly/category analytics.
-- [ ] **Phase 5 — Monthly Reports.** Auto generation, archive, on-device PDF.
-- [ ] **Phase 6 — Reliability, Backup & Final Polish.** Recovery, permissions, export/import, delete-all, release signing.
+- [x] **Phase 3 — QR → UPI Payment Flow.** Scanner, UPI parsing, 5 categories, auto time/location, 5-app launcher, status machine, local persistence.
+- [x] **Phase 4 — Savings & Analytics.** Targets, goals, weekly/monthly/category analytics.
+- [x] **Phase 5 — Monthly Reports.** Auto-derived archive, detail, on-device PDF + share.
+- [x] **Phase 6 — Reliability, Backup & Final Polish.** Pending inbox, CSV/JSON export, JSON restore, delete-all, release signing, integration test green.
 
 After every phase: verify → test → update `PHASES.md` + `CHANGELOG.md` → fix before continuing.
 

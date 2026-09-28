@@ -240,7 +240,19 @@ widget tests (sheet, goal card, chart touch).
 
 ---
 
-## Phase 6 — Reliability, Backup & Final Polish `[ ]`
+## Phase 6 — Reliability, Backup & Final Polish `[x]`
+
+> Completed 2026-09-28. Verified: `flutter analyze` clean, `flutter test` 57/57
+> pass, `integration_test/app_test.dart` PASSES on emulator (API 36, real
+> SQLite: onboard → dashboard seed → history → detail → savings → analytics →
+> reports → profile), release APKs signed with `equinox` key (apksigner
+> verified, SHA-256 8764096d…). Skipped per ponytail: local_auth gate, wakelock
+> (no evidence of need), WorkManager (reports derive live). Honest gaps for a
+> physical device: camera-QR leg, real UPI-app launch matrix, airplane-mode
+> run, permission-denied taps — no UPI apps or QR on the emulator; app code
+> makes zero network calls so offline is by construction. Keystore +
+> passwords live ONLY on this machine (android/*.jks, keystore.properties,
+> release/keystore-notes.txt — all gitignored): back them up or updates die.
 
 **Objective:** Private-app hardening: recovery, permissions, offline, backup,
 polish, release APK (§43–47, §49–51, §57, §59).

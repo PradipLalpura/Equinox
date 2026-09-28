@@ -9,14 +9,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 ProviderScope testApp() => ProviderScope(
-      overrides: [
-        txListProvider.overrideWith((_) => Stream.value(seedTx)),
-        savingsListProvider.overrideWith((_) => Stream.value(seedSavings)),
-        goalsProvider.overrideWith((_) => const Stream.empty()),
-        savingsTargetProvider.overrideWith((_) => Stream.value(5000)),
-      ],
-      child: const EquinoxRoot(),
-    );
+  overrides: [
+    txListProvider.overrideWith((_) => Stream.value(seedTx)),
+    savingsListProvider.overrideWith((_) => Stream.value(seedSavings)),
+    goalsProvider.overrideWith((_) => const Stream.empty()),
+    savingsTargetProvider.overrideWith((_) => Stream.value(5000)),
+  ],
+  child: const EquinoxRoot(),
+);
 
 void main() {
   testWidgets('onboarding shows, GET STARTED opens dashboard', (t) async {
@@ -80,9 +80,9 @@ void main() {
     await t.tap(find.text('OPEN ›'));
     await t.pumpAndSettle();
     expect(
-        find.text(
-            'SAVED IN ${monthLabel(DateTime.now()).toUpperCase()}'),
-        findsOneWidget);
+      find.text('SAVED IN ${monthLabel(DateTime.now()).toUpperCase()}'),
+      findsOneWidget,
+    );
     expect(find.text('ADD SAVINGS'), findsOneWidget);
     expect(find.text('+ NEW GOAL'), findsOneWidget);
   });
@@ -98,12 +98,20 @@ void main() {
     expect(find.text('ADD SAVINGS', skipOffstage: false), findsWidgets);
     await t.enterText(find.byType(TextField).first, 'abc');
     await t.pump();
-    expect(t.widget<FilledButton>(find.widgetWithText(FilledButton, 'SAVE')).onPressed,
-        isNull);
+    expect(
+      t
+          .widget<FilledButton>(find.widgetWithText(FilledButton, 'SAVE'))
+          .onPressed,
+      isNull,
+    );
     await t.enterText(find.byType(TextField).first, '500');
     await t.pump();
-    expect(t.widget<FilledButton>(find.widgetWithText(FilledButton, 'SAVE')).onPressed,
-        isNotNull);
+    expect(
+      t
+          .widget<FilledButton>(find.widgetWithText(FilledButton, 'SAVE'))
+          .onPressed,
+      isNotNull,
+    );
   });
 
   testWidgets('month stepper crosses into previous month', (t) async {
@@ -117,19 +125,23 @@ void main() {
     await t.tap(find.byIcon(Icons.chevron_left));
     await t.pumpAndSettle();
     expect(
-        find.text(monthLabel(DateTime(now.year, now.month - 1))),
-        findsOneWidget);
+      find.text(monthLabel(DateTime(now.year, now.month - 1))),
+      findsOneWidget,
+    );
   });
 
-  testWidgets('chart tap selects the tapped day', (t) async {    await t.pumpWidget(MaterialApp(
-      home: Scaffold(
-        body: InteractiveChart(
-          buckets: const [1000, 0, 680, 0, 0, 0, 450],
-          counts: const [2, 0, 1, 0, 0, 0, 1],
-          monday: DateTime(2026, 9, 21),
+  testWidgets('chart tap selects the tapped day', (t) async {
+    await t.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: InteractiveChart(
+            buckets: const [1000, 0, 680, 0, 0, 0, 450],
+            counts: const [2, 0, 1, 0, 0, 0, 1],
+            monday: DateTime(2026, 9, 21),
+          ),
         ),
       ),
-    ));
+    );
     await t.pumpAndSettle();
     final center = t.getCenter(find.byKey(const Key('week-chart')));
     final size = t.getSize(find.byKey(const Key('week-chart')));
@@ -155,5 +167,18 @@ void main() {
     expect(find.text('MONTH COMPARISON'), findsOneWidget);
     expect(find.text('EXPORT PDF'), findsOneWidget);
     expect(find.text('SHARE'), findsOneWidget);
+  });
+
+  testWidgets('pending inbox lists unconfirmed payments', (t) async {
+    await t.pumpWidget(testApp());
+    await t.tap(find.text('GET STARTED'));
+    await t.pumpAndSettle();
+    await t.tap(find.byIcon(Icons.person_outline).last); // nav bar, not the profile card
+    await t.pumpAndSettle();
+    expect(find.text('Pending review (1)'), findsOneWidget);
+    await t.tap(find.text('Pending review (1)'));
+    await t.pumpAndSettle();
+    expect(find.text('PENDING REVIEW'), findsOneWidget);
+    expect(find.text('Shree Krishna Cafe'), findsOneWidget);
   });
 }

@@ -25,13 +25,21 @@ void main() {
   test('create → awaiting → reconcile happy path', () async {
     final p = UpiPayload.parse('upi://pay?pa=shop@upi&pn=Shop&am=99');
     final txId = await store.createInitiated(
-        payload: p, amount: 99, category: Category.food, upiApp: 'Google Pay');
+      payload: p,
+      amount: 99,
+      category: Category.food,
+      upiApp: 'Google Pay',
+    );
     final attemptId = await store.recordLaunch(txId: txId, app: 'Google Pay');
 
     final waiting = await store.awaitingReturn();
     expect(waiting.single.id, txId);
 
-    await store.reconcile(txId: txId, attemptId: attemptId, to: PayStatus.successful);
+    await store.reconcile(
+      txId: txId,
+      attemptId: attemptId,
+      to: PayStatus.successful,
+    );
     expect(await store.awaitingReturn(), isEmpty);
     expect(await db.confirmedTotal(), 99);
 
@@ -43,23 +51,39 @@ void main() {
   test('illegal transitions throw, terminal states stick', () async {
     final p = UpiPayload.parse('upi://pay?pa=shop@upi');
     final txId = await store.createInitiated(
-        payload: p, amount: 10, category: Category.home);
+      payload: p,
+      amount: 10,
+      category: Category.home,
+    );
     final attemptId = await store.recordLaunch(txId: txId, app: 'Paytm');
     await store.reconcile(
-        txId: txId, attemptId: attemptId, to: PayStatus.successful);
+      txId: txId,
+      attemptId: attemptId,
+      to: PayStatus.successful,
+    );
     expect(
-        () => store.reconcile(
-            txId: txId, attemptId: attemptId, to: PayStatus.pending),
-        throwsStateError); // terminal: no exits
+      () => store.reconcile(
+        txId: txId,
+        attemptId: attemptId,
+        to: PayStatus.pending,
+      ),
+      throwsStateError,
+    ); // terminal: no exits
   });
 
   test('pending stays out of confirmed totals until resolved', () async {
     final p = UpiPayload.parse('upi://pay?pa=shop@upi');
     final txId = await store.createInitiated(
-        payload: p, amount: 50, category: Category.college);
+      payload: p,
+      amount: 50,
+      category: Category.college,
+    );
     final attemptId = await store.recordLaunch(txId: txId, app: 'PhonePe');
     await store.reconcile(
-        txId: txId, attemptId: attemptId, to: PayStatus.pending);
+      txId: txId,
+      attemptId: attemptId,
+      to: PayStatus.pending,
+    );
     expect(await db.confirmedTotal(), 0);
     expect((await store.awaitingReturn()), isEmpty);
   });
@@ -69,10 +93,8 @@ void main() {
     expect(await db.confirmedTotal(), 0);
     final savings = await store.watchSavings().first;
     expect(savings.single.amount, 2000);
-    expect(
-        () => store.addSaving(amount: 0), throwsArgumentError);
-    expect(
-        () => store.addSaving(amount: -5), throwsArgumentError);
+    expect(() => store.addSaving(amount: 0), throwsArgumentError);
+    expect(() => store.addSaving(amount: -5), throwsArgumentError);
   });
 
   test('contribute bumps goal atomically; paused goals refuse', () async {
@@ -80,13 +102,13 @@ void main() {
     await store.contribute(goalId: goalId, amount: 32000);
     var goals = await store.watchGoals().first;
     expect(goals.single.current, 32000);
-    expect(
-        goals.single.progress, closeTo(0.4, 0.0001));
+    expect(goals.single.progress, closeTo(0.4, 0.0001));
 
     await store.setGoalStatus(id: goalId, status: GoalStatus.paused);
     expect(
-        () => store.contribute(goalId: goalId, amount: 100),
-        throwsStateError);
+      () => store.contribute(goalId: goalId, amount: 100),
+      throwsStateError,
+    );
     goals = await store.watchGoals().first;
     expect(goals.single.current, 32000); // unchanged
 
@@ -114,8 +136,7 @@ void main() {
   });
 
   test('goal validation rejects blanks', () async {
-    expect(() => store.addGoal(name: '  ', target: 100),
-        throwsArgumentError);
+    expect(() => store.addGoal(name: '  ', target: 100), throwsArgumentError);
     expect(() => store.addGoal(name: 'X', target: 0), throwsArgumentError);
   });
 }

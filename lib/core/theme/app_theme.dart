@@ -13,14 +13,15 @@ abstract class EqColors {
 }
 
 ThemeData equinoxTheme() {
-  final scheme = ColorScheme.fromSeed(
-    seedColor: EqColors.primary,
-    brightness: Brightness.light,
-  ).copyWith(
-    primary: EqColors.primary,
-    surface: EqColors.card,
-    error: EqColors.error,
-  );
+  final scheme =
+      ColorScheme.fromSeed(
+        seedColor: EqColors.primary,
+        brightness: Brightness.light,
+      ).copyWith(
+        primary: EqColors.primary,
+        surface: EqColors.card,
+        error: EqColors.error,
+      );
   return ThemeData(
     useMaterial3: true,
     colorScheme: scheme,
@@ -34,10 +35,28 @@ ThemeData equinoxTheme() {
       ),
     ),
     textTheme: const TextTheme(
-      displayLarge: TextStyle(fontSize: 40, fontWeight: FontWeight.w700, color: EqColors.ink, letterSpacing: -1),
-      headlineMedium: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: EqColors.ink, letterSpacing: -0.5),
-      titleLarge: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: EqColors.ink),
-      titleMedium: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: EqColors.ink),
+      displayLarge: TextStyle(
+        fontSize: 40,
+        fontWeight: FontWeight.w700,
+        color: EqColors.ink,
+        letterSpacing: -1,
+      ),
+      headlineMedium: TextStyle(
+        fontSize: 28,
+        fontWeight: FontWeight.w700,
+        color: EqColors.ink,
+        letterSpacing: -0.5,
+      ),
+      titleLarge: TextStyle(
+        fontSize: 20,
+        fontWeight: FontWeight.w600,
+        color: EqColors.ink,
+      ),
+      titleMedium: TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+        color: EqColors.ink,
+      ),
       bodyLarge: TextStyle(fontSize: 16, color: EqColors.ink),
       bodyMedium: TextStyle(fontSize: 14, color: EqColors.secondary),
     ),

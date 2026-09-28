@@ -1,5 +1,6 @@
 import 'package:android_intent_plus/android_intent.dart';
 import 'package:flutter/services.dart';
+
 import '../domain/upi/upi.dart';
 
 // UPIAppLauncher (§22): installed detection via our own MethodChannel
@@ -13,8 +14,10 @@ class UpiLauncher {
   Future<bool> isInstalled(String package) async {
     if (_cache.containsKey(package)) return _cache[package]!;
     try {
-      final ok = await _channel.invokeMethod<bool>(
-              'isAppInstalled', {'package': package}) ??
+      final ok =
+          await _channel.invokeMethod<bool>('isAppInstalled', {
+            'package': package,
+          }) ??
           false;
       _cache[package] = ok;
       return ok;

@@ -32,8 +32,9 @@ void main() {
     expect(r.merchants.first.merchant, 'Shell Ranip');
     expect(r.merchants.first.total, 2000);
     expect(r.merchants.length, 5);
-    final honest =
-        r.merchants.firstWhere((m) => m.merchant == 'Honest Restaurant');
+    final honest = r.merchants.firstWhere(
+      (m) => m.merchant == 'Honest Restaurant',
+    );
     expect(honest.total, 1090);
     expect(honest.count, 1);
     expect(r.largestN.length, 5);
@@ -64,8 +65,14 @@ void main() {
 
   test('5th week captures days 29–31', () {
     final txs = [
-      Tx(id: 'x', amount: 111, category: Category.home, merchant: 'M',
-          status: PayStatus.successful, time: DateTime(2026, 8, 31, 10)),
+      Tx(
+        id: 'x',
+        amount: 111,
+        category: Category.home,
+        merchant: 'M',
+        status: PayStatus.successful,
+        time: DateTime(2026, 8, 31, 10),
+      ),
     ];
     final r = buildReport(txs, const [], 5000, 2026, 8);
     expect(r.daily.length, 31);
@@ -75,14 +82,38 @@ void main() {
 
   test('non-confirmed rows never enter reports', () {
     final txs = [
-      Tx(id: 'p', amount: 9999, category: Category.food, merchant: 'M',
-          status: PayStatus.pending, time: DateTime(2026, 9, 10)),
-      Tx(id: 'f', amount: 9999, category: Category.food, merchant: 'M',
-          status: PayStatus.failed, time: DateTime(2026, 9, 11)),
-      Tx(id: 'c', amount: 9999, category: Category.food, merchant: 'M',
-          status: PayStatus.cancelled, time: DateTime(2026, 9, 12)),
-      Tx(id: 'u', amount: 9999, category: Category.food, merchant: 'M',
-          status: PayStatus.unknown, time: DateTime(2026, 9, 13)),
+      Tx(
+        id: 'p',
+        amount: 9999,
+        category: Category.food,
+        merchant: 'M',
+        status: PayStatus.pending,
+        time: DateTime(2026, 9, 10),
+      ),
+      Tx(
+        id: 'f',
+        amount: 9999,
+        category: Category.food,
+        merchant: 'M',
+        status: PayStatus.failed,
+        time: DateTime(2026, 9, 11),
+      ),
+      Tx(
+        id: 'c',
+        amount: 9999,
+        category: Category.food,
+        merchant: 'M',
+        status: PayStatus.cancelled,
+        time: DateTime(2026, 9, 12),
+      ),
+      Tx(
+        id: 'u',
+        amount: 9999,
+        category: Category.food,
+        merchant: 'M',
+        status: PayStatus.unknown,
+        time: DateTime(2026, 9, 13),
+      ),
     ];
     final r = buildReport(txs, const [], 5000, 2026, 9);
     expect(r.total, 0);

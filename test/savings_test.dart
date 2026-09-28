@@ -6,7 +6,12 @@ void main() {
   final sept = DateTime(2026, 9, 15);
   final septSavings = [
     SavingEntry(id: 'a', amount: 2000, date: DateTime(2026, 9, 5)),
-    SavingEntry(id: 'b', amount: 1580, goalId: 'g1', date: DateTime(2026, 9, 18)),
+    SavingEntry(
+      id: 'b',
+      amount: 1580,
+      goalId: 'g1',
+      date: DateTime(2026, 9, 18),
+    ),
     SavingEntry(id: 'c', amount: 500, date: DateTime(2026, 8, 30)),
   ];
 
@@ -23,7 +28,12 @@ void main() {
   });
 
   test('goal progress clamps, remaining floors at zero (§11)', () {
-    const g = SavingGoal(id: 'g', name: 'Laptop', target: 80000, current: 32000);
+    const g = SavingGoal(
+      id: 'g',
+      name: 'Laptop',
+      target: 80000,
+      current: 32000,
+    );
     expect(g.progress, 0.4);
     expect(g.remaining, 48000);
     const over = SavingGoal(id: 'o', name: 'X', target: 100, current: 150);
