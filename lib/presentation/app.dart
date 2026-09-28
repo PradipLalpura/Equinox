@@ -6,6 +6,7 @@ import '../core/widgets/ui.dart';
 import '../data/tx_store.dart';
 import '../domain/models.dart';
 import 'pay.dart';
+import 'reports.dart';
 import 'savings.dart';
 
 // Phase 1 shell: onboarding → 5-tab nav (Home/History/Scan/Analytics/Profile).
@@ -197,10 +198,11 @@ class HomeScreen extends ConsumerWidget {
             Text('${inr(month)} spent · ${inr(saved)} saved',
                 style: Theme.of(context).textTheme.bodyMedium),
             const SizedBox(height: 12),
-            PrimaryButton(label: 'VIEW REPORT', onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                  content: Text('Monthly reports land in Phase 5. Your data is safe until then.')));
-            }),
+            PrimaryButton(
+                label: 'VIEW REPORT',
+                onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                        builder: (_) => const ReportsScreen()))),
           ]))),
         const SizedBox(height: 8),
         Card(child: Padding(padding: const EdgeInsets.all(20),

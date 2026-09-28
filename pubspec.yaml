@@ -42,6 +42,8 @@ dependencies:
   mobile_scanner: ^7.4.2
   geolocator: ^14.1.1
   android_intent_plus: ^6.1.0
+  pdf: ^3.13.1
+  printing: ^5.15.1
 
 dev_dependencies:
   flutter_test:

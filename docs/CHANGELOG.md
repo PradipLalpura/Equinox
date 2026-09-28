@@ -16,8 +16,13 @@ Categories: Added · Changed · Fixed · Improved · Technical.
   TransactionRow, CategorySelector, SavingsProgress, SpendingCard), onboarding +
   5-tab nav shell, Android manifest (camera/location permissions, UPI package
   queries), widget smoke tests (2/2 pass).
-- Release artifacts: `release/Equinox-v1.0.0-release.apk` (73.1 MB),
-  `release/Equinox-v1.0.0-arm64.apk` (26.7 MB).
+- Release artifacts: `release/Equinox-v1.0.0-release.apk` (75.1 MB),
+  `release/Equinox-v1.0.0-arm64.apk` (27.3 MB).
+- Phase 5 — Monthly Reports: pure `buildReport` (summary, categories, daily,
+  W1–W5, top-5 largest/merchants, savings, MoM) derived live — no snapshots,
+  no worker; archive + detail screens with daily strip, neutral MoM wording;
+  on-device PDF (all §32 sections, bar visuals, generation date) + Export to
+  app storage + system Share sheet. Tests: 53/53.
 - Phase 4 — Savings & Analytics: reactive savings/goals/target streams,
   AddSaving sheet (amount/goal/desc/date), goal CRUD + atomic contributions +
   pause/complete/delete (history preserved as General), editable monthly

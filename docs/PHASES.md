@@ -200,7 +200,15 @@ widget tests (sheet, goal card, chart touch).
 
 ---
 
-## Phase 5 — Monthly Reports `[ ]`
+## Phase 5 — Monthly Reports `[x]`
+
+> Completed 2026-09-27. Verified: `flutter analyze` clean, `flutter test` 53/53
+> pass (builder incl. empty/leap/5-week/non-confirmed edges, PDF smoke ×2,
+> archive→detail navigation), release APKs rebuilt. Deliberate call: reports
+> derive live from source rows (no snapshots, no WorkManager) — always correct,
+> offline, reboot-safe. PDF uses "Rs" (WinAnsi has no ₹ glyph; no TTF bundling
+> for one glyph). Export/share paths are manual-device-flows, untestable in
+> widget tests by design — covered by try/catch + snackbars.
 
 **Objective:** Auto local monthly reports + archive + on-device PDF (§31–35).
 

@@ -121,8 +121,7 @@ void main() {
         findsOneWidget);
   });
 
-  testWidgets('chart tap selects the tapped day', (t) async {
-    await t.pumpWidget(MaterialApp(
+  testWidgets('chart tap selects the tapped day', (t) async {    await t.pumpWidget(MaterialApp(
       home: Scaffold(
         body: InteractiveChart(
           buckets: const [1000, 0, 680, 0, 0, 0, 450],
@@ -137,5 +136,24 @@ void main() {
     await t.tapAt(Offset(center.dx - size.width / 2 + 20, center.dy));
     await t.pumpAndSettle();
     expect(find.text('Mon 21 · ₹1,000 · 2 transactions'), findsOneWidget);
+  });
+
+  testWidgets('teaser opens archive, month opens detail', (t) async {
+    t.view.physicalSize = const Size(800, 2400);
+    t.view.devicePixelRatio = 1.0;
+    addTearDown(t.view.resetPhysicalSize);
+    await t.pumpWidget(testApp());
+    await t.tap(find.text('GET STARTED'));
+    await t.pumpAndSettle();
+    await t.tap(find.text('VIEW REPORT'));
+    await t.pumpAndSettle();
+    expect(find.text('REPORTS'), findsOneWidget);
+    expect(find.text('September 2026'), findsWidgets);
+    await t.tap(find.text('September 2026').first);
+    await t.pumpAndSettle();
+    expect(find.text('SUMMARY'), findsOneWidget);
+    expect(find.text('MONTH COMPARISON'), findsOneWidget);
+    expect(find.text('EXPORT PDF'), findsOneWidget);
+    expect(find.text('SHARE'), findsOneWidget);
   });
 }
